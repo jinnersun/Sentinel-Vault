@@ -173,23 +173,113 @@
 
 ---
 
+---
+
+### P3 - 凭证管理扩展 (基于 V2 新架构)
+
+#### 8️⃣ [服务器&数据库凭证管理 - V2 重设计](ARCHITECTURE_QUICK_REFERENCE.md) ⏱️ 5-6 天
+**优先级**: 高 | **复杂度**: ⭐⭐⭐ 复杂 | **架构版本**: V2 (独立信息模型)
+
+将 DevVault 从密码管理工具扩展为**全面的凭证管理系统**，同时彻底重新设计架构，使凭证和项目完全解耦。
+
+**🎯 核心改进 - V2 架构**:
+- ✅ **完全解耦**: 凭证无必须关联项目，可独立存在
+- ✅ **N:N 灵活关联**: 支持一个凭证关联多个项目、跨项目共享
+- ✅ **独立凭证库**: 可存储与项目无关的通用 API KEY、连接字符串等
+- ✅ **完整导入历史**: Chrome 密码导入有独立历史表管理
+- ✅ **向后兼容**: 现有数据自动迁移，无需手动修改
+- ✅ **可维护性**: 清晰的数据模型，易于理解和扩展
+
+**📊 功能特性**:
+- 🖥️ 服务器凭证 (云服务商 Aliyun/Tencent/AWS、SSH、运维信息)
+- 🗄️ 数据库凭证 (MySQL、PostgreSQL、MongoDB、Redis 等)
+- 🔗 其他服务凭证 (Redis、RabbitMQ、Elasticsearch 等)
+- 📝 完整的说明和运维信息(专业运维说明字段)
+- 🏢 项目和环境分类 (dev/test/prod)
+- 🔐 支持跨项目凭证共享
+- 📥 完整 Chrome 导入历史管理
+
+**📚 必读文档** (快速了解新架构):
+1. 🔥 [`ARCHITECTURE_QUICK_REFERENCE.md`](ARCHITECTURE_QUICK_REFERENCE.md) - **5分钟快速对比 V1 vs V2**
+2. 📋 [`ARCHITECTURE_REDESIGN_V2.md`](ARCHITECTURE_REDESIGN_V2.md) - 完整架构设计 (所有表结构、数据模型)
+3. 🔄 [`MIGRATION_AND_IMPACT_ANALYSIS.md`](MIGRATION_AND_IMPACT_ANALYSIS.md) - 迁移影响分析和成本评估
+4. 🚀 [`IMPLEMENTATION_PLAN_V2_UPDATED.md`](IMPLEMENTATION_PLAN_V2_UPDATED.md) - **最新实现计划 (含5+1个Phase)**
+5. ⚡ [`QUICK_DECISION_GUIDE.md`](QUICK_DECISION_GUIDE.md) - 快速决策指南
+
+**📖 参考文档** (详细背景):
+- [`FEATURE_ANALYSIS_SERVER_CREDENTIALS.md`](FEATURE_ANALYSIS_SERVER_CREDENTIALS.md) - 原始需求分析 (3个架构方案对比)
+- [`OVERVIEW_P3_CREDENTIALS.md`](OVERVIEW_P3_CREDENTIALS.md) - 功能完整概览
+- [`IMPLEMENTATION_PLAN_SERVER_CREDENTIALS.md`](IMPLEMENTATION_PLAN_SERVER_CREDENTIALS.md) - V1 实现计划 (已过时，供参考)
+
+**🏗️ V2 核心数据模型**:
+```
+vault_items (独立，无project_id)
+├─ 所有凭证 (密码、服务器、数据库、服务)
+└─ 支持同一表存储所有类型
+
+projects (独立，无凭证依赖)
+├─ 项目管理和组织
+└─ 可以存在而不拥有凭证
+
+credential_project_relations (N:N关联)
+├─ 支持灵活的多对多关系
+└─ 支持关系类型标记 (primary/associated/shared)
+
+chrome_imported_passwords (导入历史)
+├─ 独立管理导入记录
+└─ 可选关联到vault_item
+```
+
+**⏱️ 工作量变化**:
+- 原计划: 50 小时
+- 新计划: 53 小时 (增加 3 小时架构优化)
+- **投入/收益**: 仅增加 6%，获得 4-5 倍灵活性提升
+
+**📅 新的 Phase 分解**:
+- Phase 0 (1 天): 数据库架构重设 + 迁移 ⭐ 新增
+- Phase 1 (2-3 天): 后端 API 实现
+- Phase 2 (2-3 天): 前端 UI 框架和导航
+- Phase 3 (2-3 天): 服务器/数据库/服务 UI
+- Phase 4 (1-2 天): 高级功能 (搜索、过滤、连接测试等)
+- Phase 5 (1-2 天): 优化和发布 v0.3.0
+
+**🎯 为什么选 V2**:
+1. ✨ **解决痛点**: 用户不再需要创建虚拟项目来存储独立凭证
+2. 📈 **灵活性**: 支持跨项目共享、独立管理、多种关联方式
+3. 💰 **ROI**: 投入仅增加 3 小时 (6%)，获得长期 4-5 倍回报
+4. 🔮 **未来证明**: 易于添加权限控制、审计日志、团队协作等功能
+5. 🏗️ **架构卓越**: 清晰的数据模型，远优于 V1
+
+**✅ 推荐行动**:
+1. 阅读 [`ARCHITECTURE_QUICK_REFERENCE.md`](ARCHITECTURE_QUICK_REFERENCE.md) (5 分钟)
+2. 确认是否同意新架构
+3. 开始 Phase 0: 数据库设计和迁移
+
+---
+
 ## 📊 实现时间线建议
 
 ```
-Week 1:
+Week 1-2 (P1-P2 功能):
   Day 1-2: Chrome 导入 (并行开发后端和前端)
   Day 3:   剪贴板监听器修复 (快速功能)
   Day 4-5: 导入冲突处理 (后端算法 + UI)
 
-Week 2:
+Week 2-3 (P1-P2 功能):
   Day 1-2: 智能自动锁定 (事件系统)
   Day 3-4: 隐身模式选项 (条件渲染)
   Day 5:   数据统计面板 (前半部分)
 
-Week 3:
+Week 3-4 (P1-P2 功能):
   Day 1:   数据统计面板 (完成)
   Day 2-4: 主题自定义 (CSS系统)
   Day 5:   集成测试 + Bug修复
+
+Week 5-6 (P3 功能):
+  Day 1:   数据库架构 + 基础 API
+  Day 2-3: 服务器管理完整实现
+  Day 4:   数据库管理实现
+  Day 5:   服务管理 + 优化
 ```
 
 ---
