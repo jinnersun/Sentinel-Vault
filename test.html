@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevVault Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .bg-background { background-color: #1a1b26; }
+        .bg-surface { background-color: #24283b; }
+        .bg-surface2 { background-color: #414868; }
+        .text-text { color: #c0caf5; }
+        .text-text2 { color: #9aa5ce; }
+        .text-accent { color: #7aa2f7; }
+        .border-surface2 { border-color: #414868; }
+        
+        .card {
+            background-color: #24283b;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            border: 1px solid #414868;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #7aa2f7;
+            color: #1a1b26;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #89b4fa;
+        }
+        
+        .input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background-color: #24283b;
+            border: 1px solid #414868;
+            border-radius: 0.5rem;
+            color: #c0caf5;
+        }
+        
+        .input:focus {
+            outline: none;
+            ring: 2px solid #7aa2f7;
+        }
+    </style>
+</head>
+<body class="bg-background text-text min-h-screen">
+    <div class="min-h-screen bg-background flex flex-col">
+        <!-- Header -->
+        <header class="bg-surface border-b border-surface2 px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold text-accent">DevVault</h1>
+                </div>
+                <div class="flex items-center space-x-4 flex-1 max-w-md">
+                    <div class="relative flex-1 max-w-md">
+                        <input
+                            type="text"
+                            placeholder="搜索标题、备注或URL... (Ctrl+K)"
+                            class="input pl-10"
+                        />
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="btn btn-sm flex items-center space-x-2">
+                        <span>新建</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Sidebar -->
+            <div class="w-64 bg-surface border-r border-surface2 flex flex-col">
+                <div class="p-4 border-b border-surface2">
+                    <h2 class="text-sm font-semibold text-text uppercase tracking-wider mb-4">项目</h2>
+                    <div class="flex items-center space-x-2 p-2 rounded cursor-pointer bg-surface2 text-accent">
+                        <div class="w-4 h-4 bg-accent rounded"></div>
+                        <span class="text-sm font-medium">全部条目 (3)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vault List -->
+            <div class="w-96 border-r border-surface2 overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-surface2">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-text">全部条目</h2>
+                        <button class="p-1 hover:bg-surface2 rounded">➕</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <!-- Sample Item 1 -->
+                    <div class="card p-4 cursor-pointer transition-all relative">
+                        <div class="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl" style="background-color: #3b82f6;"></div>
+                        <div class="ml-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded bg-green-500"></div>
+                                    <h3 class="font-medium text-text">OpenAI API Key</h3>
+                                </div>
+                                <span class="text-xs text-text2 bg-surface2 px-2 py-1 rounded">API</span>
+                            </div>
+                            <div class="text-sm text-text2 mb-2 truncate">https://api.openai.com</div>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📋</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📄</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🔧</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sample Item 2 -->
+                    <div class="card p-4 cursor-pointer transition-all relative">
+                        <div class="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl" style="background-color: #f59e0b;"></div>
+                        <div class="ml-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded bg-orange-500"></div>
+                                    <h3 class="font-medium text-text">GitHub Token</h3>
+                                </div>
+                                <span class="text-xs text-text2 bg-surface2 px-2 py-1 rounded">API</span>
+                            </div>
+                            <div class="text-sm text-text2 mb-2 truncate">https://github.com</div>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📋</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📄</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🔧</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sample Item 3 -->
+                    <div class="card p-4 cursor-pointer transition-all relative">
+                        <div class="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl" style="background-color: #ef4444;"></div>
+                        <div class="ml-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded bg-red-500"></div>
+                                    <h3 class="font-medium text-text">Production Database</h3>
+                                </div>
+                                <span class="text-xs text-text2 bg-surface2 px-2 py-1 rounded">Database</span>
+                            </div>
+                            <div class="text-sm text-text2 mb-2 truncate">mysql.production.com</div>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📋</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">📄</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🔧</button>
+                                <button class="p-1 hover:bg-surface2 rounded text-text2">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Detail -->
+            <div class="flex-1 overflow-hidden">
+                <div class="h-full bg-surface flex flex-col">
+                    <div class="p-6 border-b border-surface2">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded bg-green-500"></div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-text">OpenAI API Key</h2>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <span class="text-sm text-text2 bg-surface2 px-2 py-1 rounded">API</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-sm font-medium text-text uppercase tracking-wider">
+                                    API Key
+                                </label>
+                                <button class="p-1 hover:bg-surface2 rounded">👁️</button>
+                            </div>
+                            <div class="bg-background rounded-lg p-4 border border-surface2">
+                                <div class="font-mono text-sm break-all text-text">
+                                    sk-***************************************************
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 mt-3">
+                                <button class="btn btn-sm flex-1">📋 复制原始值</button>
+                                <button class="btn btn-sm flex-1">📋 复制为环境变量</button>
+                                <button class="btn btn-sm flex-1">📋 复制为JSON</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
+                                URL
+                            </label>
+                            <div class="bg-background rounded-lg p-4 border border-surface2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-accent">https://api.openai.com</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
+                                备注
+                            </label>
+                            <div class="bg-background rounded-lg p-4 border border-surface2">
+                                <div class="text-text">用于 GPT-4 API 调用</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-transparent;
+  }
+  
+  body {
+    @apply bg-background text-text font-mono antialiased;
+    font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  }
+  
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg bg-accent text-background hover:bg-accent2 transition-colors duration-200 font-medium;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 rounded-lg bg-surface text-text hover:bg-surface2 transition-colors duration-200 font-medium;
+  }
+  
+  .card {
+    @apply bg-surface rounded-xl shadow-lg border border-surface2 hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 bg-surface border border-surface2 rounded-lg text-text placeholder-text2 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200;
+  }
+  
+  .color-bar {
+    @apply absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl;
+  }
+}

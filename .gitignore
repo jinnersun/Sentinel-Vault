@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Rust build
+target/
+src-tauri/target/
+Cargo.lock
+
+# Build outputs
+dist/
+out/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+devvault.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Development documentation (analysis files)
+BUG_ANALYSIS.md
+QUICK_DIAGNOSIS.md
+FIX_CHECKLIST.md
+ANALYSIS_PASSWORD_FLOW.md
+FEATURES_CHECKLIST.md
+TEST_REPORT.md
+
+# Tauri build artifacts
+src-tauri/icons/icon.ico
+src-tauri/resource.rc
+
+# Temporary files
+*.tmp
+*.log

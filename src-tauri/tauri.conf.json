@@ -1,0 +1,33 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "DevVault",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false
+    },
+    "bundle": {
+      "active": false,
+      "identifier": "com.devvault.app",
+      "icon": [],
+      "resources": []
+    },
+
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "DevVault",
+        "width": 1200,
+        "height": 800
+      }
+    ]
+  }
+}
