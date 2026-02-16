@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { X } from 'lucide-react';
 import api from '../lib/tauri-api';
+import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -20,14 +21,46 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
     project_id: null as number | null,
     color: '#3b82f6',
   });
+  const [originalData, setOriginalData] = useState(formData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const isDirtyRef = useRef(false);
+  const { dispatch } = useApp();
+
+  // 检查是否有未保存的更改
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(originalData);
+  isDirtyRef.current = isDirty;
+
+  // 页面关闭前的提示
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isDirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // 同步未保存状态和保存回调到全局
+  useEffect(() => {
+    dispatch({ type: 'SET_UNSAVED_CHANGES', payload: isOpen && isDirty });
+    dispatch({ 
+      type: 'SET_SAVE_CALLBACK', 
+      payload: isOpen && isDirty ? () => handleSubmit(new Event('submit') as any) : null 
+    });
+    return () => {
+      dispatch({ type: 'SET_UNSAVED_CHANGES', payload: false });
+      dispatch({ type: 'SET_SAVE_CALLBACK', payload: null });
+    };
+  }, [isOpen, isDirty, dispatch]);
 
   useEffect(() => {
     if (isOpen) {
       if (item) {
         // Editing mode - populate form
-        setFormData({
+        const data = {
           title: item.title,
           secret: item.secret_encrypted || '',
           url: item.url || '',
@@ -35,10 +68,12 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
           category: item.category,
           project_id: item.project_id || null,
           color: item.color,
-        });
+        };
+        setFormData(data);
+        setOriginalData(data);
       } else {
         // New item mode - reset form and check clipboard
-        setFormData({
+        const data = {
           title: '',
           secret: '',
           url: '',
@@ -46,7 +81,9 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
           category: 'API',
           project_id: null,
           color: '#3b82f6',
-        });
+        };
+        setFormData(data);
+        setOriginalData(data);
         setError('');
         checkClipboard();
       }
@@ -149,6 +186,8 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
         // Don't fail the operation if refresh fails
       }
 
+      // 更新原始数据，标记为已保存
+      setOriginalData(formData);
       onClose();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -163,6 +202,23 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleClose = async () => {
+    if (isDirty) {
+      const action = await showUnsavedDialog('您有未保存的条目更改');
+      if (action === 'cancel') return;
+      if (action === 'save') {
+        // 触发保存
+        const form = document.querySelector('form') as HTMLFormElement;
+        if (form) {
+          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+        return;
+      }
+      // action === 'discard'，继续关闭
+    }
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -170,11 +226,16 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
       <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-surface2">
-          <h2 className="text-xl font-bold text-text">
-            {item ? '编辑条目' : '新建条目'}
-          </h2>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-xl font-bold text-text">
+              {item ? '编辑条目' : '新建条目'}
+            </h2>
+            {isDirty && (
+              <span className="text-sm text-warning">* 有未保存的更改</span>
+            )}
+          </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 hover:bg-surface2 rounded transition-colors"
           >
             <X className="w-5 h-5 text-text2" />

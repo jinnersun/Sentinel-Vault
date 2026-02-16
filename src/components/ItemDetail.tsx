@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Copy, Edit, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { Copy, Edit, ExternalLink, Eye, EyeOff, History, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../lib/tauri-api';
 import { formatDate } from '../lib/utils';
 import { smartCopy } from '../lib/smart-copy';
 
+interface HistoryRecord {
+  id: number;
+  vault_id: number;
+  old_secret_encrypted: string;
+  change_reason: string | null;
+  created_at: string;
+}
+
 export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => void }) {
   const { state, dispatch } = useApp();
   const [showSecret, setShowSecret] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   if (!state.selectedItem) {
     return null;
@@ -54,6 +65,25 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
     if (!show) return '*'.repeat(Math.min(text.length, 20));
     return text;
   };
+
+  const loadHistory = async () => {
+    if (!state.selectedItem?.id) return;
+    setLoadingHistory(true);
+    try {
+      const data = await api.getVaultHistory(state.selectedItem.id);
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showHistory && history.length === 0) {
+      loadHistory();
+    }
+  }, [showHistory]);
 
   const project = state.projects.find(p => p.id === state.selectedItem?.project_id);
 
@@ -113,11 +143,11 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* API Key Section */}
+        {/* 密码/密钥 Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium text-text uppercase tracking-wider">
-              API Key
+              {state.selectedItem.category === 'Chrome' ? '密码' : 'API Key'}
             </label>
             <button
               onClick={() => setShowSecret(!showSecret)}
@@ -162,6 +192,21 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
           </div>
         </div>
 
+        {/* 用户名 Section - 针对 Chrome 凭证 */}
+        {state.selectedItem.category === 'Chrome' && state.selectedItem.notes && (
+          <div>
+            <label className="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
+              用户名
+            </label>
+            <div className="bg-background rounded-lg p-4 border border-surface2">
+              <div className="text-text">
+                {/* 从 notes 中提取用户名 */}
+                {state.selectedItem.notes.replace('用户名: ', '')}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* URL Section */}
         {state.selectedItem.url && (
           <div>
@@ -197,6 +242,46 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
             </div>
           </div>
         )}
+
+        {/* History Section */}
+        <div>
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center space-x-2 text-sm font-medium text-text uppercase tracking-wider mb-3 hover:text-accent transition-colors"
+          >
+            <History className="w-4 h-4" />
+            <span>密码历史</span>
+            {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          
+          {showHistory && (
+            <div className="bg-background rounded-lg p-4 border border-surface2">
+              {loadingHistory ? (
+                <div className="text-center py-4 text-text2">加载中...</div>
+              ) : history.length === 0 ? (
+                <div className="text-center py-4 text-text2">暂无历史记录</div>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((record) => (
+                    <div key={record.id} className="border-b border-surface2 last:border-0 pb-3 last:pb-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-text2">
+                          {record.change_reason || '密码变更'}
+                        </span>
+                        <span className="text-xs text-text2">
+                          {new Date(record.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="font-mono text-sm text-text">
+                        {displaySecret(record.old_secret_encrypted, false)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Metadata */}
         <div>

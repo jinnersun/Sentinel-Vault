@@ -42,6 +42,19 @@ FIX_CHECKLIST.md
 ANALYSIS_PASSWORD_FLOW.md
 FEATURES_CHECKLIST.md
 TEST_REPORT.md
+DEVELOPMENT.md
+
+# Documentation directory
+docs/
+
+# Test files
+test.html
+
+# Build logs
+build.log
+
+# Data files
+*.csv
 
 # Tauri build artifacts
 src-tauri/icons/icon.ico

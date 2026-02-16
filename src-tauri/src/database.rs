@@ -4,6 +4,15 @@ use once_cell::sync::OnceCell;
 
 static DB_POOL: OnceCell<SqlitePool> = OnceCell::new();
 
+const MIGRATION_001: &str = include_str!("../migrations/001_create_projects_table.sql");
+const MIGRATION_002: &str = include_str!("../migrations/002_create_relations_table.sql");
+const MIGRATION_003: &str = include_str!("../migrations/003_create_imports_table.sql");
+const MIGRATION_004: &str = include_str!("../migrations/004_create_api_keys_table.sql");
+const MIGRATION_005: &str = include_str!("../migrations/005_migrate_vault_relations.sql");
+const MIGRATION_006: &str = include_str!("../migrations/006_create_vault_history.sql");
+const MIGRATION_007: &str = include_str!("../migrations/007_create_import_logs.sql");
+const MIGRATION_008: &str = include_str!("../migrations/008_alter_projects_table.sql");
+
 pub async fn init_database() -> Result<(), sqlx::Error> {
     let database_url = "sqlite:./devvault.db";
     
@@ -11,42 +20,8 @@ pub async fn init_database() -> Result<(), sqlx::Error> {
         .create_if_missing(true);
     
     let pool = SqlitePool::connect_with(options).await?;
-    
-    // Create tables
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS vault (
-            id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            secret_encrypted TEXT NOT NULL,
-            url TEXT,
-            notes TEXT,
-            category TEXT DEFAULT 'API',
-            project_id INTEGER,
-            color TEXT DEFAULT '#3b82f6',
-            favicon_url TEXT,
-            is_archived INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (project_id) REFERENCES projects (id)
-        )
-        "#
-    )
-    .execute(&pool)
-    .await?;
-    
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL,
-            color TEXT DEFAULT '#10b981'
-        )
-        "#
-    )
-    .execute(&pool)
-    .await?;
-    
+
+    // Ensure base tables that older versions expect
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS settings (
@@ -58,6 +33,9 @@ pub async fn init_database() -> Result<(), sqlx::Error> {
     .execute(&pool)
     .await?;
 
+    // Apply V2 migrations (idempotent)
+    apply_migrations(&pool).await?;
+
     // Insert default project if none exists
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM projects")
         .fetch_one(&pool)
@@ -65,7 +43,7 @@ pub async fn init_database() -> Result<(), sqlx::Error> {
         
     if count == 0 {
         sqlx::query("INSERT INTO projects (name, color) VALUES (?, ?)")
-            .bind("默认项目")
+            .bind("Default")
             .bind("#10b981")
             .execute(&pool)
             .await?;
@@ -73,6 +51,54 @@ pub async fn init_database() -> Result<(), sqlx::Error> {
 
     // Store the pool in the global
     let _ = DB_POOL.set(pool);
+    Ok(())
+}
+
+async fn apply_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // migrations tracking table
+    sqlx::query(
+        r#"CREATE TABLE IF NOT EXISTS _migrations (
+            name TEXT PRIMARY KEY,
+            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"#
+    )
+    .execute(pool)
+    .await?;
+
+    let migrations: &[(&str, &str)] = &[
+        ("001_create_projects_table.sql", MIGRATION_001),
+        ("002_create_relations_table.sql", MIGRATION_002),
+        ("003_create_imports_table.sql", MIGRATION_003),
+        ("004_create_api_keys_table.sql", MIGRATION_004),
+        ("005_migrate_vault_relations.sql", MIGRATION_005),
+        ("006_create_vault_history.sql", MIGRATION_006),
+        ("007_create_import_logs.sql", MIGRATION_007),
+        ("008_alter_projects_table.sql", MIGRATION_008),
+    ];
+
+    for (name, sql) in migrations.iter() {
+        let applied: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM _migrations WHERE name = ?")
+            .bind(name)
+            .fetch_one(pool)
+            .await?;
+
+        if applied == 0 {
+            // Split by semicolon to run multiple statements safely
+            for stmt in sql.split(';') {
+                let s = stmt.trim();
+                if s.is_empty() {
+                    continue;
+                }
+                sqlx::query(s).execute(pool).await?;
+            }
+
+            sqlx::query("INSERT INTO _migrations (name) VALUES (?)")
+                .bind(name)
+                .execute(pool)
+                .await?;
+        }
+    }
+
     Ok(())
 }
 

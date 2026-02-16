@@ -1,12 +1,39 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { FolderPlus, Settings } from 'lucide-react';
+import { FolderPlus, Settings, Download, Upload, Edit2, Trash2, Key, Server } from 'lucide-react';
+import type { Project } from '../types';
 import api from '../lib/tauri-api';
+import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
 
 export default function Sidebar() {
   const { state, dispatch, refreshData } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+
+  // 检查未保存更改并执行操作
+  const checkUnsavedAndExecute = async (action: () => void) => {
+    if (state.hasUnsavedChanges) {
+      const result = await showUnsavedDialog('您有未保存的更改');
+      if (result === 'cancel') return;
+      if (result === 'save') {
+        // 用户选择保存，执行保存回调
+        if (state.saveCallback) {
+          try {
+            await state.saveCallback();
+          } catch (error) {
+            console.error('保存失败:', error);
+            alert('保存失败，无法跳转');
+            return;
+          }
+        }
+        // 保存成功后继续执行跳转
+      }
+      // result === 'discard' 或保存成功，继续执行
+    }
+    action();
+  };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +46,10 @@ export default function Sidebar() {
       const projectData = {
         name: newProjectName.trim(),
         color: '#10b981',
+        status: 'active',
+        description: '',
+        arch_desc: '',
+        urls_json: '[]',
       };
       
       console.log('Creating project:', projectData);
@@ -31,7 +62,11 @@ export default function Sidebar() {
         payload: { 
           id, 
           name: newProjectName.trim(), 
-          color: '#10b981' 
+          color: '#10b981',
+          status: 'active',
+          description: '',
+          arch_desc: '',
+          urls_json: '[]',
         },
       });
       
@@ -44,14 +79,57 @@ export default function Sidebar() {
     }
   };
 
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setEditName(project.name);
+  };
 
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject || !editName.trim()) return;
+
+    try {
+      await api.updateProject(editingProject.id!, {
+        name: editName.trim(),
+        color: editingProject.color,
+        status: editingProject.status,
+        description: editingProject.description,
+        arch_desc: editingProject.arch_desc,
+        readme_path: editingProject.readme_path,
+        urls_json: editingProject.urls_json,
+      });
+      await refreshData();
+      setEditingProject(null);
+      setEditName('');
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      alert('更新项目失败');
+    }
+  };
+
+  const handleDeleteProject = async (project: Project) => {
+    if (!confirm(`确定要删除项目 "${project.name}" 吗？\n注意：该项目下的所有关联将被移除，但凭证不会被删除。`)) {
+      return;
+    }
+
+    try {
+      await api.deleteProject(project.id!);
+      await refreshData();
+      if (state.selectedProject === project.id) {
+        dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('删除项目失败');
+    }
+  };
 
   return (
-    <div className="w-64 bg-surface border-r border-surface2 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-surface2">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-text uppercase tracking-wider">项目</h2>
+    <div className="w-64 bg-surface border-r border-surface2 flex flex-col h-full overflow-hidden">
+      {/* 模块 1: 项目 (占据上方 50% 空间并可滚动) */}
+      <div className="flex-[0.5] flex flex-col min-h-0 border-b border-surface2">
+        <div className="p-4 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-xs font-bold text-text2 uppercase">我的项目</h2>
           <button
             onClick={() => setShowNewProject(true)}
             className="p-1 hover:bg-surface2 rounded transition-colors"
@@ -63,43 +141,151 @@ export default function Sidebar() {
 
         {/* All Items */}
         <div
-          className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
-            !state.selectedProject ? 'bg-surface2 text-accent' : 'hover:bg-surface2'
+          className={`flex items-center space-x-2 p-2 mx-4 mb-2 rounded cursor-pointer transition-colors ${
+            !state.selectedProject && state.currentView === 'vault' && !state.selectedCategory ? 'bg-surface2 text-accent' : 'hover:bg-surface2'
           }`}
-          onClick={() => dispatch({ type: 'SET_SELECTED_PROJECT', payload: null })}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+              dispatch({ type: 'SET_SELECTED_CATEGORY', payload: null });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
         >
           <div className="w-4 h-4 bg-accent rounded"></div>
           <span className="text-sm font-medium">
-            全部条目 ({state.vaultItems.length})
+            全部条目 ({state.vaultItems.filter(i => i.category !== 'Chrome' && i.category !== 'API').length})
           </span>
         </div>
-      </div>
 
-      {/* Projects List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {/* Projects List */}
+        <div className="flex-1 overflow-y-auto px-4 pb-2 custom-scrollbar min-h-0">
         {state.projects.map((project) => (
           <div
             key={project.id}
-            className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
-              state.selectedProject === project.id ? 'bg-surface2 text-accent' : 'hover:bg-surface2'
+            className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors group ${
+              state.selectedProject === project.id && state.currentView === 'vault' ? 'bg-surface2 text-accent' : 'hover:bg-surface2'
             }`}
-            onClick={() => dispatch({ type: 'SET_SELECTED_PROJECT', payload: project.id! })}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: project.id! });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
           >
             <div
               className="w-4 h-4 rounded"
               style={{ backgroundColor: project.color }}
             ></div>
-            <span className="text-sm font-medium">{project.name}</span>
-            <span className="text-xs text-text2 ml-auto">
-              ({state.vaultItems.filter(item => item.project_id === project.id).length})
+            <span className="text-sm font-medium flex-1">{project.name}</span>
+            <span className="text-xs text-text2">
+              ({project.count ?? 0})
             </span>
+            <div className="hidden group-hover:flex items-center space-x-1 ml-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditProject(project);
+                }}
+                className="p-1 hover:bg-surface rounded"
+                title="编辑项目"
+              >
+                <Edit2 className="w-3 h-3 text-text2" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteProject(project);
+                }}
+                className="p-1 hover:bg-surface rounded"
+                title="删除项目"
+              >
+                <Trash2 className="w-3 h-3 text-error" />
+              </button>
+            </div>
           </div>
         ))}
+        </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-surface2">
-        <button className="flex items-center space-x-2 p-2 hover:bg-surface2 rounded w-full transition-colors">
+      {/* 模块 2: Chrome 浏览器凭证 (中间区域) */}
+      <div className="p-2 border-b border-surface2">
+        <div className="flex items-center space-x-2 mb-2">
+          <button 
+            className={`flex-1 flex items-center space-x-2 p-3 rounded-lg transition-all ${
+              state.currentView === 'vault' && state.selectedCategory === 'Chrome' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            }`}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+                dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'Chrome' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
+          >
+            <Download className="w-4 h-4" />
+            <span className="text-sm font-semibold">Chrome 凭证</span>
+          </button>
+          <button
+            onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'imports' }))}
+            className="p-3 rounded-lg hover:bg-surface2 text-text2"
+            title="从 CSV 导入"
+          >
+            <Upload className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 模块 3: 基础设施资产 */}
+      <div className="p-2 border-b border-surface2">
+        <button 
+          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
+            state.currentView === 'infrastructure' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'infrastructure' });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
+        >
+          <Server className="w-4 h-4" />
+          <span className="text-sm font-semibold">基础设施</span>
+        </button>
+      </div>
+
+      {/* 模块 4: API Keys */}
+      <div className="p-2">
+        <button 
+          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
+            state.currentView === 'vault' && state.selectedCategory === 'API' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+              dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'API' });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
+        >
+          <Key className="w-4 h-4" />
+          <span className="text-sm font-semibold">API Keys 仓库</span>
+        </button>
+      </div>
+
+      {/* 设置按钮 - 固定在底部 */}
+      <div className="mt-auto p-4 border-t border-surface2 bg-surface/50 flex-shrink-0">
+        <button 
+          className={`flex items-center space-x-2 p-2 rounded w-full transition-colors ${
+            state.currentView === 'settings' ? 'bg-surface2 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'settings' }))}
+        >
           <Settings className="w-4 h-4 text-text2" />
           <span className="text-sm text-text2">设置</span>
         </button>
@@ -128,6 +314,40 @@ export default function Sidebar() {
                   onClick={() => {
                     setShowNewProject(false);
                     setNewProjectName('');
+                  }}
+                  className="btn-secondary flex-1"
+                >
+                  取消
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="card p-6 w-80">
+            <h3 className="text-lg font-semibold text-text mb-4">编辑项目</h3>
+            <form onSubmit={handleUpdateProject}>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="input mb-4"
+                placeholder="项目名称"
+                autoFocus
+              />
+              <div className="flex space-x-2">
+                <button type="submit" className="btn flex-1">
+                  保存
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProject(null);
+                    setEditName('');
                   }}
                   className="btn-secondary flex-1"
                 >

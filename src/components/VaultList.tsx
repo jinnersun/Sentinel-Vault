@@ -2,9 +2,33 @@ import { useApp } from '../contexts/AppContext';
 import { Copy, Edit, Trash2, Plus } from 'lucide-react';
 import api from '../lib/tauri-api';
 import { smartCopy } from '../lib/smart-copy';
+import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
 
 export default function VaultList({ onEditItem }: { onEditItem: (item: any) => void }) {
   const { state, dispatch } = useApp();
+
+  // 检查未保存更改并执行操作
+  const checkUnsavedAndExecute = async (action: () => void) => {
+    if (state.hasUnsavedChanges) {
+      const result = await showUnsavedDialog('您有未保存的更改');
+      if (result === 'cancel') return;
+      if (result === 'save') {
+        // 用户选择保存，执行保存回调
+        if (state.saveCallback) {
+          try {
+            await state.saveCallback();
+          } catch (error) {
+            console.error('保存失败:', error);
+            alert('保存失败，无法跳转');
+            return;
+          }
+        }
+        // 保存成功后继续执行跳转
+      }
+      // result === 'discard' 或保存成功，继续执行
+    }
+    action();
+  };
 
   const handleCopy = async (item: any, format: 'raw' | 'env' | 'json' = 'raw') => {
     try {
@@ -43,9 +67,31 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
     }
   };
 
-  const filteredItems = state.selectedProject
-    ? state.vaultItems.filter(item => item.project_id === state.selectedProject)
-    : state.vaultItems;
+  // 过滤逻辑：根据 selectedCategory 和 searchQuery
+  const filteredItems = state.vaultItems.filter(item => {
+    // 1. 按分类过滤
+    if (state.selectedCategory) {
+      // 特定分类：严格匹配
+      if (item.category !== state.selectedCategory) {
+        return false;
+      }
+    } else {
+      // "全部条目"：排除 Chrome 和 API 分类（只显示普通凭证）
+      if (item.category === 'Chrome' || item.category === 'API') {
+        return false;
+      }
+    }
+    // 2. 按搜索词过滤
+    if (state.searchQuery) {
+      const query = state.searchQuery.toLowerCase();
+      return (
+        item.title?.toLowerCase().includes(query) ||
+        item.url?.toLowerCase().includes(query) ||
+        item.notes?.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
 
   const displayText = (text: string, stealthMode: boolean) => {
     if (!stealthMode) return text;
@@ -82,7 +128,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                 ? 'ring-2 ring-accent'
                 : 'hover:bg-surface'
             }`}
-            onClick={() => dispatch({ type: 'SET_SELECTED_ITEM', payload: item })}
+            onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_SELECTED_ITEM', payload: item }))}
           >
             {/* Color Bar */}
             <div

@@ -7,6 +7,7 @@ type AppAction =
   | { type: 'SET_VAULT_ITEMS'; payload: VaultItem[] }
   | { type: 'SET_PROJECTS'; payload: Project[] }
   | { type: 'SET_SELECTED_PROJECT'; payload: number | null }
+  | { type: 'SET_SELECTED_CATEGORY'; payload: string | null }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SELECTED_ITEM'; payload: VaultItem | null }
   | { type: 'TOGGLE_STEALTH_MODE' }
@@ -14,17 +15,24 @@ type AppAction =
   | { type: 'ADD_VAULT_ITEM'; payload: VaultItem }
   | { type: 'UPDATE_VAULT_ITEM'; payload: { id: number; item: VaultItem } }
   | { type: 'DELETE_VAULT_ITEM'; payload: number }
-  | { type: 'ADD_PROJECT'; payload: Project };
+  | { type: 'ADD_PROJECT'; payload: Project }
+  | { type: 'SET_CURRENT_VIEW'; payload: import('../types').ViewType }
+  | { type: 'SET_UNSAVED_CHANGES'; payload: boolean }
+  | { type: 'SET_SAVE_CALLBACK'; payload: (() => Promise<void>) | null };
 
 const initialState: AppState = {
   vaultItems: [],
   projects: [],
   selectedProject: null,
+  selectedCategory: null,
   searchQuery: '',
   selectedItem: null,
   isLoading: true,
   stealthMode: false,
   masterPasswordVerified: false,
+  currentView: 'vault',
+  hasUnsavedChanges: false,
+  saveCallback: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -37,6 +45,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, projects: action.payload };
     case 'SET_SELECTED_PROJECT':
       return { ...state, selectedProject: action.payload };
+    case 'SET_SELECTED_CATEGORY':
+      return { ...state, selectedCategory: action.payload };
     case 'SET_SEARCH_QUERY':
       return { ...state, searchQuery: action.payload };
     case 'SET_SELECTED_ITEM':
@@ -61,6 +71,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
     case 'ADD_PROJECT':
       return { ...state, projects: [...state.projects, action.payload] };
+    case 'SET_CURRENT_VIEW':
+      return { ...state, currentView: action.payload };
+    case 'SET_UNSAVED_CHANGES':
+      return { ...state, hasUnsavedChanges: action.payload };
+    case 'SET_SAVE_CALLBACK':
+      return { ...state, saveCallback: action.payload };
     default:
       return state;
   }
@@ -79,12 +95,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshData = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const [vaultItems, projects] = await Promise.all([
-        api.getVaultItems(),
+      const [projects, projectCounts] = await Promise.all([
         api.getProjects(),
+        api.getProjectCounts(),
       ]);
+
+      // Vault items: fetch by selected project if present
+      const vaultItems = await api.getVaultItemsByProject(state.selectedProject ?? null);
+
+      // Merge counts into projects (projectCounts entries include count)
+      const projectsMap = new Map<number, any>();
+      projectCounts.forEach((p: any) => {
+        if (p.id != null) projectsMap.set(p.id, p.count ?? 0);
+      });
+
+      const projectsWithCounts = projects.map(p => ({ ...p, count: p.id ? projectsMap.get(p.id) ?? 0 : 0 }));
+
       dispatch({ type: 'SET_VAULT_ITEMS', payload: vaultItems });
-      dispatch({ type: 'SET_PROJECTS', payload: projects });
+      dispatch({ type: 'SET_PROJECTS', payload: projectsWithCounts });
     } catch (error) {
       console.error('Failed to refresh data:', error);
     } finally {
@@ -115,8 +143,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const checkMasterPassword = async () => {
       try {
         const isSet = await api.hasMasterPassword();
-        // masterPasswordVerified should be false until user sets or verifies password
-        dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: false });
+        // masterPasswordVerified should be true if password already set
+        dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: !!isSet });
       } catch (error) {
         console.error('Failed to check master password:', error);
         // Assume password is needed if check fails
@@ -126,6 +154,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     checkMasterPassword();
   }, []);
+
+  // When selected project changes, refresh vault items accordingly
+  useEffect(() => {
+    // avoid calling on initial mount (refreshData already called)
+    refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.selectedProject]);
 
   return (
     <AppContext.Provider value={{ state, dispatch, refreshData, searchItems }}>
