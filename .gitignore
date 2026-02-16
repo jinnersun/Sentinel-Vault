@@ -63,3 +63,6 @@ src-tauri/resource.rc
 # Temporary files
 *.tmp
 *.log
+
+# Qoder IDE
+.qoder/
