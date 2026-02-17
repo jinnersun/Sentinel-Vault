@@ -109,6 +109,11 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
 
   // 过滤逻辑：根据 selectedCategory 和 searchQuery
   const filteredItems = state.vaultItems.filter(item => {
+    // 如果有搜索词，显示所有匹配结果（不过滤分类）
+    if (state.searchQuery) {
+      return true; // 后端已经过滤过了，直接显示
+    }
+    
     // 1. 按分类过滤
     if (state.selectedCategory) {
       // 特定分类：严格匹配
@@ -120,15 +125,6 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
       if (item.category === 'Chrome' || item.category === 'API') {
         return false;
       }
-    }
-    // 2. 按搜索词过滤
-    if (state.searchQuery) {
-      const query = state.searchQuery.toLowerCase();
-      return (
-        item.title?.toLowerCase().includes(query) ||
-        item.url?.toLowerCase().includes(query) ||
-        item.notes?.toLowerCase().includes(query)
-      );
     }
     return true;
   });
