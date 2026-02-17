@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
-import type { VaultItem, Project, ApiKey } from '../types';
+import type { VaultItem, Project, ApiKey, SecurityOverview, SecurityAlert, SSLCertificate, Domain, DomainInfoResult } from '../types';
 
 export const api = {
   // Vault Items
@@ -140,6 +140,115 @@ export const api = {
   // Project README
   readProjectReadme: async (path: string): Promise<string> => {
     return await invoke('read_project_readme', { path });
+  },
+
+  // Settings
+  getSetting: async (key: string): Promise<string | null> => {
+    return await invoke('get_setting', { key });
+  },
+
+  updateSetting: async (key: string, value: string): Promise<void> => {
+    return await invoke('update_setting', { key, value });
+  },
+
+  backupDatabase: async (targetPath: string): Promise<void> => {
+    return await invoke('backup_database', { targetPath });
+  },
+
+  clearAllData: async (): Promise<void> => {
+    return await invoke('clear_all_data');
+  },
+
+  // Security Center
+  getSecurityOverview: async (): Promise<SecurityOverview> => {
+    return await invoke('get_security_overview');
+  },
+
+  getSecurityAlerts: async (): Promise<SecurityAlert[]> => {
+    return await invoke('get_security_alerts');
+  },
+
+  updateVaultItemSecurity: async (
+    id: number,
+    params: {
+      last_rotated_at?: string;
+      enable_rotation_reminder?: boolean;
+      rotation_reminder_days?: number;
+      api_expires_at?: string;
+      enable_expiry_alert?: boolean;
+      expiry_alert_days?: number;
+    }
+  ): Promise<void> => {
+    return await invoke('update_vault_item_security', { id, ...params });
+  },
+
+  // Certificate Management
+  uploadCertificate: async (params: {
+    cert_name: string;
+    cert_content: string;
+    key_content?: string;
+    chain_content?: string;
+    notes?: string;
+  }): Promise<SSLCertificate> => {
+    return await invoke('upload_certificate', { request: params });
+  },
+
+  getCertificates: async (): Promise<SSLCertificate[]> => {
+    return await invoke('get_certificates');
+  },
+
+  deleteCertificate: async (id: number): Promise<void> => {
+    return await invoke('delete_certificate', { id });
+  },
+
+  readCertificateFile: async (certId: number, fileType: 'cert' | 'key' | 'chain'): Promise<string> => {
+    return await invoke('read_certificate_file', { certId, fileType });
+  },
+
+  copyCertificateToClipboard: async (certId: number, fileType: 'cert' | 'key' | 'chain'): Promise<void> => {
+    return await invoke('copy_certificate_to_clipboard', { certId, fileType });
+  },
+
+  getCertificateFilePath: async (certId: number, fileType: 'cert' | 'key' | 'chain'): Promise<string> => {
+    return await invoke('get_certificate_file_path', { certId, fileType });
+  },
+
+  // Domain Info (RDAP)
+  fetchDomainInfo: async (domain: string): Promise<DomainInfoResult> => {
+    return await invoke('fetch_domain_info', { domain });
+  },
+
+  syncDomainInfo: async (domainId: number, domain: string): Promise<DomainInfoResult> => {
+    return await invoke('sync_domain_info', { domainId, domain });
+  },
+
+  // Domain Management
+  getDomains: async (): Promise<Domain[]> => {
+    return await invoke('get_domains');
+  },
+
+  createDomain: async (params: Omit<Domain, 'id' | 'created_at' | 'updated_at' | 'servers' | 'certificates'>): Promise<number> => {
+    return await invoke('create_domain', { request: params });
+  },
+
+  updateDomain: async (params: Omit<Domain, 'created_at' | 'updated_at' | 'servers' | 'certificates'> & { id: number }): Promise<void> => {
+    return await invoke('update_domain', { request: params });
+  },
+
+  deleteDomain: async (id: number): Promise<void> => {
+    return await invoke('delete_domain', { id });
+  },
+
+  linkDomainServer: async (domainId: number, serverId: number): Promise<void> => {
+    return await invoke('link_domain_server', { domainId, serverId });
+  },
+
+  unlinkDomainServer: async (domainId: number, serverId: number): Promise<void> => {
+    return await invoke('unlink_domain_server', { domainId, serverId });
+  },
+
+  getExpiringDomains: async (days: number): Promise<Domain[]> => {
+    return await invoke('get_expiring_domains', { days });
   },
 
   // Event listeners

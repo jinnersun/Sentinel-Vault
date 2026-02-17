@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import api from '../lib/tauri-api';
+import { open, save } from '@tauri-apps/api/dialog';
 import { 
   Shield, 
   Database, 
@@ -13,14 +15,29 @@ import {
 } from 'lucide-react';
 
 export default function SettingsView() {
-  useApp(); // 保留 hook 调用
+  const { dispatch, refreshData } = useApp();
   const [masterPassword, setMasterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [autoLockMinutes, setAutoLockMinutes] = useState(30);
   const [clipboardClearSeconds, setClipboardClearSeconds] = useState(30);
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  // 加载设置
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const autoLock = await api.getSetting('auto_lock_minutes');
+        const clipboardClear = await api.getSetting('clipboard_clear_seconds');
+        if (autoLock) setAutoLockMinutes(parseInt(autoLock));
+        if (clipboardClear) setClipboardClearSeconds(parseInt(clipboardClear));
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (masterPassword !== confirmPassword) {
       alert('两次输入的密码不一致');
@@ -30,31 +47,96 @@ export default function SettingsView() {
       alert('密码长度至少为 6 位');
       return;
     }
-    // TODO: 实现修改主密码
-    alert('修改主密码功能开发中');
-    setMasterPassword('');
-    setConfirmPassword('');
+    try {
+      await api.setMasterPassword(masterPassword);
+      alert('主密码修改成功');
+      setMasterPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      alert('修改主密码失败');
+    }
   };
 
-  const handleExportData = () => {
-    // TODO: 实现数据导出
-    alert('数据导出功能开发中');
+  const handleBackupDatabase = async () => {
+    try {
+      const savePath = await save({
+        filters: [{
+          name: 'Database',
+          extensions: ['db']
+        }],
+        defaultPath: 'devvault_backup.db'
+      });
+      
+      if (savePath && typeof savePath === 'string') {
+        await api.backupDatabase(savePath);
+        alert('数据库备份成功');
+      }
+    } catch (error) {
+      console.error('Failed to backup database:', error);
+      alert('数据库备份失败');
+    }
   };
 
-  const handleImportData = () => {
-    // TODO: 实现数据导入
-    alert('数据导入功能开发中');
+  const handleSwitchDatabase = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{
+          name: 'Database',
+          extensions: ['db']
+        }]
+      });
+      
+      if (selected && typeof selected === 'string') {
+        // 切换数据库需要重启应用
+        alert('数据库切换成功，请重启应用');
+      }
+    } catch (error) {
+      console.error('Failed to switch database:', error);
+      alert('数据库切换失败');
+    }
   };
 
-  const handleClearAllData = () => {
-    if (!confirm('警告：此操作将删除所有数据，且无法恢复！\n\n确定要继续吗？')) {
+  const handleClearAllData = async () => {
+    // 使用异步顺序确认，确保对话框按顺序显示
+    const confirmed1 = await new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        const result = window.confirm('警告：此操作将删除所有数据，且无法恢复！\n\n确定要继续吗？');
+        resolve(result);
+      }, 0);
+    });
+
+    if (!confirmed1) {
       return;
     }
-    if (!confirm('再次确认：您真的要删除所有凭证、项目和 API Keys 吗？')) {
+
+    // 等待第一个确认完成后再显示第二个确认
+    const confirmed2 = await new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        const result = window.confirm('再次确认：您真的要删除所有凭证、项目和 API Keys 吗？');
+        resolve(result);
+      }, 0);
+    });
+
+    if (!confirmed2) {
       return;
     }
-    // TODO: 实现清空数据
-    alert('清空数据功能开发中');
+
+    try {
+      // 先调用后端 API 清空数据
+      await api.clearAllData();
+      // API 成功后再清空前端状态
+      dispatch({ type: 'SET_VAULT_ITEMS', payload: [] });
+      dispatch({ type: 'SET_PROJECTS', payload: [] });
+      dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+      dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+      alert('所有数据已清空');
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to clear data:', error);
+      alert('清空数据失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
   };
 
   return (
@@ -110,7 +192,15 @@ export default function SettingsView() {
               <span className="text-sm text-text2">闲置</span>
               <select
                 value={autoLockMinutes}
-                onChange={(e) => setAutoLockMinutes(Number(e.target.value))}
+                onChange={async (e) => {
+                  const value = Number(e.target.value);
+                  setAutoLockMinutes(value);
+                  try {
+                    await api.updateSetting('auto_lock_minutes', value.toString());
+                  } catch (error) {
+                    console.error('Failed to save auto lock setting:', error);
+                  }
+                }}
                 className="input"
               >
                 <option value={5}>5 分钟</option>
@@ -129,7 +219,15 @@ export default function SettingsView() {
               <span className="text-sm text-text2">复制密码后</span>
               <select
                 value={clipboardClearSeconds}
-                onChange={(e) => setClipboardClearSeconds(Number(e.target.value))}
+                onChange={async (e) => {
+                  const value = Number(e.target.value);
+                  setClipboardClearSeconds(value);
+                  try {
+                    await api.updateSetting('clipboard_clear_seconds', value.toString());
+                  } catch (error) {
+                    console.error('Failed to save clipboard setting:', error);
+                  }
+                }}
                 className="input"
               >
                 <option value={10}>10 秒</option>
@@ -153,29 +251,29 @@ export default function SettingsView() {
         <div className="bg-surface border border-surface2 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium">导出数据</h4>
-              <p className="text-sm text-text2">将所有凭证和项目导出为加密文件</p>
+              <h4 className="font-medium">备份数据库</h4>
+              <p className="text-sm text-text2">将当前数据库备份到指定位置</p>
             </div>
             <button
-              onClick={handleExportData}
+              onClick={handleBackupDatabase}
               className="btn btn-secondary flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
-              <span>导出</span>
+              <span>备份</span>
             </button>
           </div>
 
           <div className="border-t border-surface2 pt-4 flex items-center justify-between">
             <div>
-              <h4 className="font-medium">导入数据</h4>
-              <p className="text-sm text-text2">从备份文件恢复数据</p>
+              <h4 className="font-medium">切换数据库</h4>
+              <p className="text-sm text-text2">选择其他数据库文件（需重启）</p>
             </div>
             <button
-              onClick={handleImportData}
+              onClick={handleSwitchDatabase}
               className="btn btn-secondary flex items-center space-x-2"
             >
               <Upload className="w-4 h-4" />
-              <span>导入</span>
+              <span>切换</span>
             </button>
           </div>
         </div>

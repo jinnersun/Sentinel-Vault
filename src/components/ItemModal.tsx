@@ -8,19 +8,22 @@ interface ItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   item?: any; // For editing existing item
+  defaultCategory?: string; // 新建时的默认分类
 }
 
-export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
+export default function ItemModal({ isOpen, onClose, item, defaultCategory }: ItemModalProps) {
   const { state, refreshData } = useApp();
   const [formData, setFormData] = useState({
     title: '',
     secret: '',
     url: '',
     notes: '',
-    category: 'API',
+    category: defaultCategory || 'API',
     project_id: null as number | null,
     color: '#3b82f6',
   });
+  // Chrome 凭证专用字段
+  const [chromeUsername, setChromeUsername] = useState('');
   const [originalData, setOriginalData] = useState(formData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,21 +74,32 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
         };
         setFormData(data);
         setOriginalData(data);
+        // 提取 Chrome 凭证的用户名
+        if (item.category === 'Chrome' && item.notes) {
+          const usernameMatch = item.notes.match(/用户名: (.+)/);
+          setChromeUsername(usernameMatch ? usernameMatch[1] : '');
+        } else {
+          setChromeUsername('');
+        }
       } else {
         // New item mode - reset form and check clipboard
+        const category = defaultCategory || 'API';
         const data = {
           title: '',
           secret: '',
           url: '',
           notes: '',
-          category: 'API',
+          category,
           project_id: null,
-          color: '#3b82f6',
+          color: category === 'Chrome' ? '#3b82f6' : '#3b82f6',
         };
         setFormData(data);
         setOriginalData(data);
+        setChromeUsername('');
         setError('');
-        checkClipboard();
+        if (category !== 'Chrome') {
+          checkClipboard();
+        }
       }
     }
   }, [item, isOpen]);
@@ -133,18 +147,28 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
       return;
     }
     if (!formData.secret.trim()) {
-      setError('请输入API Key');
+      setError(formData.category === 'Chrome' ? '请输入密码' : '请输入API Key');
+      return;
+    }
+    if (formData.category === 'Chrome' && !formData.url.trim()) {
+      setError('请输入网站 URL');
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // 构建 notes 字段
+      let notes = formData.notes?.trim() || '';
+      if (formData.category === 'Chrome' && chromeUsername) {
+        notes = `用户名: ${chromeUsername}\n${notes}`;
+      }
+
       const itemData = {
         title: formData.title.trim(),
         secret_encrypted: formData.secret.trim(), // Secret is stored as secret_encrypted
         url: formData.url?.trim() || undefined,
-        notes: formData.notes?.trim() || undefined,
+        notes: notes || undefined,
         category: formData.category,
         project_id: formData.project_id,
         color: formData.color,
@@ -265,33 +289,84 @@ export default function ItemModal({ isOpen, onClose, item }: ItemModalProps) {
             />
           </div>
 
-          {/* Secret */}
-          <div>
-            <label className="block text-sm font-medium text-text mb-2">
-              API Key *
-            </label>
-            <textarea
-              value={formData.secret}
-              onChange={(e) => handleInputChange('secret', e.target.value)}
-              className="input min-h-[80px]"
-              placeholder="输入您的API Key..."
-              required
-            />
-          </div>
+          {/* Chrome 凭证专用字段 */}
+          {formData.category === 'Chrome' ? (
+            <>
+              {/* URL - Chrome 必填 */}
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">
+                  网站 URL *
+                </label>
+                <input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => handleInputChange('url', e.target.value)}
+                  className="input"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
 
-          {/* URL */}
-          <div>
-            <label className="block text-sm font-medium text-text mb-2">
-              URL
-            </label>
-            <input
-              type="url"
-              value={formData.url}
-              onChange={(e) => handleInputChange('url', e.target.value)}
-              className="input"
-              placeholder="https://api.openai.com"
-            />
-          </div>
+              {/* 用户名 - Chrome */}
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">
+                  用户名
+                </label>
+                <input
+                  type="text"
+                  value={chromeUsername}
+                  onChange={(e) => setChromeUsername(e.target.value)}
+                  className="input"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              {/* 密码 - Chrome */}
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">
+                  密码 *
+                </label>
+                <input
+                  type="password"
+                  value={formData.secret}
+                  onChange={(e) => handleInputChange('secret', e.target.value)}
+                  className="input"
+                  placeholder="输入密码..."
+                  required
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Secret - 普通 API Key */}
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">
+                  API Key *
+                </label>
+                <textarea
+                  value={formData.secret}
+                  onChange={(e) => handleInputChange('secret', e.target.value)}
+                  className="input min-h-[80px]"
+                  placeholder="输入您的API Key..."
+                  required
+                />
+              </div>
+
+              {/* URL - 普通 */}
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">
+                  URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => handleInputChange('url', e.target.value)}
+                  className="input"
+                  placeholder="https://api.openai.com"
+                />
+              </div>
+            </>
+          )}
 
           {/* Category */}
           <div>

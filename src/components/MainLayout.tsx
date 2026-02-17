@@ -9,6 +9,9 @@ import ImportsView from './ImportsView';
 import ApiKeysView from './ApiKeysView';
 import SettingsView from './SettingsView';
 import InfrastructureView from './InfrastructureView';
+import SecurityCenter from './SecurityCenter';
+import DomainView from './DomainView';
+import CertificateView from './CertificateView';
 import SearchBar from './SearchBar';
 import Toolbar from './Toolbar';
 import ItemModal from './ItemModal';
@@ -135,6 +138,27 @@ export default function MainLayout() {
               <InfrastructureView />
             </div>
           )}
+
+          {/* Security Center View */}
+          {state.currentView === 'security' && (
+            <div className="flex-1 overflow-hidden">
+              <SecurityCenter onClose={() => {}} />
+            </div>
+          )}
+
+          {/* Domain View */}
+          {state.currentView === 'domains' && (
+            <div className="flex-1 overflow-hidden">
+              <DomainView onClose={() => {}} />
+            </div>
+          )}
+
+          {/* Certificate View */}
+          {state.currentView === 'certificates' && (
+            <div className="flex-1 overflow-hidden">
+              <CertificateView onClose={() => {}} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -146,6 +170,7 @@ export default function MainLayout() {
           setEditingItem(null);
         }}
         item={editingItem}
+        defaultCategory={state.selectedCategory === 'Chrome' ? 'Chrome' : 'API'}
       />
     </div>
   );

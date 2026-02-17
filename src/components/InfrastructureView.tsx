@@ -1,9 +1,30 @@
 import { useApp } from '../contexts/AppContext';
-import { Server, Database, Plus, Copy, Eye, EyeOff, Trash2, Edit2 } from 'lucide-react';
+import { Server, Database, Plus, Copy, Eye, EyeOff, Trash2, Edit2, X } from 'lucide-react';
 import { parseAssetNotes, type ServerAsset, type DatabaseAsset } from '../types';
 import { useState } from 'react';
 import api from '../lib/tauri-api';
 import InfrastructureModal from './InfrastructureModal';
+
+// 数据库连接字符串模板
+const CONNECTION_TEMPLATES: Record<string, string> = {
+  'MySQL': 'mysql://{user}:{pass}@{host}:{port}/{db}',
+  'PostgreSQL': 'postgresql://{user}:{pass}@{host}:{port}/{db}',
+  'MongoDB': 'mongodb://{user}:{pass}@{host}:{port}/{db}?authSource=admin',
+  'Redis': 'redis://:{pass}@{host}:{port}/0',
+  'SQLServer': 'sqlserver://{user}:{pass}@{host}:{port};database={db}',
+  'Oracle': 'oracle://{user}:{pass}@{host}:{port}/{db}',
+};
+
+// 生成连接字符串
+function generateConnectionString(dbType: string, username: string, password: string, host: string, port: number, database: string): string {
+  const template = CONNECTION_TEMPLATES[dbType] || CONNECTION_TEMPLATES['MySQL'];
+  return template
+    .replace('{user}', username || 'root')
+    .replace('{pass}', password)
+    .replace('{host}', host)
+    .replace('{port}', (port || 3306).toString())
+    .replace('{db}', database || '');
+}
 
 export default function InfrastructureView() {
   const { state, dispatch } = useApp();
@@ -11,6 +32,8 @@ export default function InfrastructureView() {
   const [activeTab, setActiveTab] = useState<'all' | 'server' | 'database'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
+  const [detailItem, setDetailItem] = useState<typeof infrastructureItems[0] | null>(null);
 
   // 过滤出基础设施资产（Server 和 Database 类别）
   const infrastructureItems = state.vaultItems.filter(
@@ -48,14 +71,33 @@ export default function InfrastructureView() {
     }
   };
 
+  // 修复：改进的删除逻辑
   const handleDelete = async (item: typeof infrastructureItems[0]) => {
-    if (!window.confirm(`确定要删除 "${item.title}" 吗？`)) return;
+    // 检查是否已在删除中（防止多次点击）
+    if (deletingItemId !== null) {
+      return;
+    }
+
+    if (!window.confirm(`确定要删除 "${item.title}" 吗？`)) {
+      return;
+    }
+
+    setDeletingItemId(item.id ?? null);
+
     try {
+      // 关键修改：先调用后端 API，不做乐观更新
       await api.deleteVaultItem(item.id!);
+      
+      // 只有后端成功返回，才更新本地状态
       dispatch({ type: 'DELETE_VAULT_ITEM', payload: item.id! });
+      
+      console.log(`成功删除 "${item.title}"`);
     } catch (error) {
       console.error('删除失败:', error);
-      alert('删除失败');
+      alert(`删除 "${item.title}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      // 失败时不需要调用 refreshData，因为我们从未修改本地状态
+    } finally {
+      setDeletingItemId(null);
     }
   };
 
@@ -77,6 +119,13 @@ export default function InfrastructureView() {
           </div>
           <div className="flex items-center space-x-1">
             <button
+              onClick={() => setDetailItem(item)}
+              className="p-1.5 hover:bg-surface2 rounded"
+              title="查看详情"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => {
                 setEditingItem(item);
                 setIsModalOpen(true);
@@ -85,13 +134,6 @@ export default function InfrastructureView() {
               title="编辑"
             >
               <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => toggleSecret(item.id!)}
-              className="p-1.5 hover:bg-surface2 rounded"
-              title={showSecrets.has(item.id!) ? '隐藏密码' : '显示密码'}
-            >
-              {showSecrets.has(item.id!) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
             <button
               onClick={() => handleDelete(item)}
@@ -246,24 +288,35 @@ export default function InfrastructureView() {
           </div>
 
           {/* 连接字符串 */}
-          {dbData?.username && (
+          {dbData?.username && dbData?.host && (
             <div className="flex items-center justify-between bg-surface rounded-lg p-2">
               <div className="flex items-center space-x-2 overflow-hidden">
                 <span className="text-sm text-text2">连接:</span>
                 <span className="font-mono text-sm truncate">
-                  {dbData.db_type?.toLowerCase().includes('mysql') 
-                    ? `mysql://${dbData.username}:****@${dbData.host}:${dbData.port || 3306}/${dbData.database}`
-                    : `${dbData.db_type?.toLowerCase()}://${dbData.username}:****@${dbData.host}:${dbData.port || 5432}/${dbData.database}`
-                  }
+                  {generateConnectionString(
+                    dbData.db_type || 'MySQL',
+                    dbData.username,
+                    '****',
+                    dbData.host,
+                    dbData.port || 3306,
+                    dbData.database || ''
+                  ).replace(/\?.*$/, '?...')}
                 </span>
               </div>
               <button
                 onClick={() => copyToClipboard(
-                  `${dbData.db_type?.toLowerCase().includes('mysql') ? 'mysql' : dbData.db_type?.toLowerCase()}://${dbData.username}:${item.secret_encrypted}@${dbData.host}:${dbData.port || 3306}/${dbData.database}`,
+                  generateConnectionString(
+                    dbData.db_type || 'MySQL',
+                    dbData.username || '',
+                    item.secret_encrypted || '',
+                    dbData.host || '',
+                    dbData.port || 3306,
+                    dbData.database || ''
+                  ),
                   '连接字符串'
                 )}
                 className="p-1 hover:bg-surface2 rounded flex-shrink-0"
-                title="复制连接字符串"
+                title="复制连接字符串 (Navicat/DBeaver 可用)"
               >
                 <Copy className="w-3 h-3" />
               </button>
@@ -393,6 +446,225 @@ export default function InfrastructureView() {
         }}
         item={editingItem}
       />
+
+      {/* Detail Modal */}
+      {detailItem && (
+        <ServerDetailModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          onEdit={() => {
+            setEditingItem(detailItem);
+            setIsModalOpen(true);
+            setDetailItem(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// 服务器详情弹窗组件
+interface ServerDetailModalProps {
+  item: {
+    id?: number;
+    title: string;
+    secret_encrypted: string;
+    notes?: string;
+    project_id?: number | null;
+  };
+  onClose: () => void;
+  onEdit: () => void;
+}
+
+function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
+  const [showSecrets, setShowSecrets] = useState<Set<string>>(new Set());
+  const parsed = parseAssetNotes(item.notes);
+  const serverData = parsed.data as ServerAsset | null;
+
+  const toggleSecret = (key: string) => {
+    setShowSecrets(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      console.log(`已复制 ${label}`);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
+
+  const renderSecretField = (label: string, value: string, key: string, rows: number = 1) => (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-text">{label}</label>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => toggleSecret(key)}
+            className="p-1 hover:bg-surface2 rounded"
+            title={showSecrets.has(key) ? '隐藏' : '显示'}
+          >
+            {showSecrets.has(key) ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </button>
+          <button
+            onClick={() => copyToClipboard(value, label)}
+            className="p-1 hover:bg-surface2 rounded"
+            title="复制"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+      {rows > 1 ? (
+        <textarea
+          readOnly
+          value={showSecrets.has(key) ? value : '••••••••••••••••'}
+          rows={rows}
+          className="w-full px-3 py-2 bg-surface rounded-lg text-sm font-mono resize-none"
+        />
+      ) : (
+        <input
+          type="text"
+          readOnly
+          value={showSecrets.has(key) ? value : '••••••••'}
+          className="w-full px-3 py-2 bg-surface rounded-lg text-sm font-mono"
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-background rounded-xl border border-surface2 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-surface2">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <Server className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">{item.title}</h2>
+              <p className="text-sm text-text2">{serverData?.os || 'Linux'} 服务器</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={onEdit}
+              className="p-2 hover:bg-surface2 rounded-lg"
+              title="编辑"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-surface2 rounded-lg"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {/* 基本信息 */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="text-sm text-text2 mb-1 block">IP 地址</label>
+              <div className="flex items-center space-x-2">
+                <span className="font-mono">{serverData?.ip || '-'}</span>
+                <button
+                  onClick={() => copyToClipboard(serverData?.ip || '', 'IP')}
+                  className="p-1 hover:bg-surface2 rounded"
+                >
+                  <Copy className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-text2 mb-1 block">端口</label>
+              <span className="font-mono">{serverData?.port || 22}</span>
+            </div>
+            <div>
+              <label className="text-sm text-text2 mb-1 block">SSH 用户</label>
+              <span>{serverData?.ssh_user || '-'}</span>
+            </div>
+            <div>
+              <label className="text-sm text-text2 mb-1 block">状态</label>
+              <span className={`px-2 py-0.5 rounded text-xs ${
+                serverData?.status === 'running' ? 'bg-green-500/20 text-green-400' :
+                serverData?.status === 'stopped' ? 'bg-red-500/20 text-red-400' :
+                serverData?.status === 'maintenance' ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-surface2'
+              }`}>
+                {serverData?.status === 'running' ? '运行中' :
+                 serverData?.status === 'stopped' ? '已停止' :
+                 serverData?.status === 'maintenance' ? '维护中' : '未知'}
+              </span>
+            </div>
+            {serverData?.region && (
+              <div>
+                <label className="text-sm text-text2 mb-1 block">区域</label>
+                <span>{serverData.region}</span>
+              </div>
+            )}
+            {serverData?.provider && (
+              <div>
+                <label className="text-sm text-text2 mb-1 block">云服务商</label>
+                <span>{serverData.provider}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 标签 */}
+          {serverData?.tags && serverData.tags.length > 0 && (
+            <div className="mb-6">
+              <label className="text-sm text-text2 mb-2 block">标签</label>
+              <div className="flex flex-wrap gap-2">
+                {serverData.tags.map((tag, idx) => (
+                  <span key={idx} className="px-2 py-1 bg-surface rounded text-sm">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 敏感信息区域 */}
+          <div className="border-t border-surface2 pt-4">
+            <h3 className="text-sm font-medium mb-4">认证信息</h3>
+            
+            {renderSecretField('密码', item.secret_encrypted, 'password')}
+            
+            {serverData?.ssh_key && renderSecretField('SSH 私钥', serverData.ssh_key, 'ssh_key', 4)}
+          </div>
+
+          {/* SSL 证书区域 */}
+          {(serverData?.ssl_cert || serverData?.ssl_key) && (
+            <div className="border-t border-surface2 pt-4 mt-4">
+              <h3 className="text-sm font-medium mb-4">SSL 证书</h3>
+              
+              {serverData.ssl_cert && renderSecretField('证书内容', serverData.ssl_cert, 'ssl_cert', 4)}
+              {serverData.ssl_key && renderSecretField('私钥内容', serverData.ssl_key, 'ssl_key', 4)}
+            </div>
+          )}
+
+          {/* 描述 */}
+          {serverData?.description && (
+            <div className="border-t border-surface2 pt-4 mt-4">
+              <label className="text-sm text-text2 mb-2 block">描述</label>
+              <p className="text-sm">{serverData.description}</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

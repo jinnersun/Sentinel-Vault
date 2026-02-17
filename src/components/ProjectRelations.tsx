@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/tauri-api';
-import { Trash2, Plus, Server, Database, Key, Copy, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Trash2, Plus, Server, Database, Key, Copy, Eye, EyeOff, ExternalLink, Chrome } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { VaultItem, parseAssetNotes, ServerAsset, DatabaseAsset } from '../types';
 
@@ -10,7 +10,7 @@ export default function ProjectRelations() {
   const [unlinked, setUnlinked] = useState<VaultItem[]>([]);
   const [selectedToAdd, setSelectedToAdd] = useState<number | null>(null);
   const [showSecrets, setShowSecrets] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState<'all' | 'server' | 'database' | 'apikey'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'server' | 'database' | 'apikey' | 'chrome'>('all');
 
   const projectId = state.selectedProject;
 
@@ -83,6 +83,7 @@ export default function ProjectRelations() {
   const servers = linked.filter(item => item.category === 'Server');
   const databases = linked.filter(item => item.category === 'Database');
   const apiKeys = linked.filter(item => item.category === 'API');
+  const chromePasswords = linked.filter(item => item.category === 'Chrome');
 
   const renderServerCard = (item: VaultItem) => {
     const parsed = parseAssetNotes(item.notes);
@@ -251,6 +252,11 @@ export default function ProjectRelations() {
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
+      {item.url && (
+        <div className="text-xs text-text2 mb-2 truncate">
+          URL: {item.url}
+        </div>
+      )}
       <div className="flex items-center justify-between text-xs">
         <span className="text-text2 truncate flex-1 mr-2">
           {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••••••••'}
@@ -272,6 +278,70 @@ export default function ProjectRelations() {
       </div>
     </div>
   );
+
+  const renderChromeCard = (item: VaultItem) => {
+    // 从 notes 提取用户名
+    const usernameMatch = item.notes?.match(/用户名: (.+)/);
+    const username = usernameMatch ? usernameMatch[1] : '';
+    
+    return (
+      <div key={item.id} className="card p-3 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <Chrome className="w-4 h-4 text-blue-400" />
+            <span className="font-medium text-sm">{item.title}</span>
+          </div>
+          <button
+            onClick={() => item.id && handleRemove(item.id)}
+            className="p-1 hover:bg-surface2 rounded text-error"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="text-xs text-text2 space-y-1">
+          {item.url && (
+            <div className="flex items-center justify-between">
+              <span className="truncate flex-1 mr-2">URL: {item.url}</span>
+              <button
+                onClick={() => copyToClipboard(item.url || '')}
+                className="p-1 hover:bg-surface2 rounded"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {username && (
+            <div className="flex items-center justify-between">
+              <span>用户: {username}</span>
+              <button
+                onClick={() => copyToClipboard(username)}
+                className="p-1 hover:bg-surface2 rounded"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span>密码: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => toggleSecret(item.id!)}
+                className="p-1 hover:bg-surface2 rounded"
+              >
+                {showSecrets.has(item.id!) ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              </button>
+              <button
+                onClick={() => copyToClipboard(item.secret_encrypted)}
+                className="p-1 hover:bg-surface2 rounded"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -316,6 +386,15 @@ export default function ProjectRelations() {
             <Key className="w-3 h-3" />
             <span>API ({apiKeys.length})</span>
           </button>
+          <button
+            onClick={() => setActiveTab('chrome')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
+              activeTab === 'chrome' ? 'bg-accent text-white' : 'bg-surface2 hover:bg-surface'
+            }`}
+          >
+            <Chrome className="w-3 h-3" />
+            <span>Chrome ({chromePasswords.length})</span>
+          </button>
         </div>
       </div>
 
@@ -326,13 +405,30 @@ export default function ProjectRelations() {
           <label className="text-xs text-text2">添加资源到此项目</label>
           <div className="flex items-center space-x-2 mt-1">
             <select
-              className="input text-sm py-1.5"
+              className="input text-sm py-1.5 flex-1"
               value={selectedToAdd ?? ''}
               onChange={(e) => setSelectedToAdd(Number(e.target.value))}
             >
-              {unlinked.map(u => (
-                <option key={u.id} value={u.id}>{u.title} ({u.category})</option>
-              ))}
+              <optgroup label="服务器">
+                {unlinked.filter(u => u.category === 'Server').map(u => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+              </optgroup>
+              <optgroup label="数据库">
+                {unlinked.filter(u => u.category === 'Database').map(u => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+              </optgroup>
+              <optgroup label="API Keys">
+                {unlinked.filter(u => u.category === 'API').map(u => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Chrome 凭证">
+                {unlinked.filter(u => u.category === 'Chrome').map(u => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+              </optgroup>
             </select>
             <button onClick={handleAdd} className="btn btn-sm">
               <Plus className="w-4 h-4" />
@@ -368,6 +464,16 @@ export default function ProjectRelations() {
               <span>API Keys</span>
             </h4>
             {apiKeys.map(renderApiKeyCard)}
+          </div>
+        )}
+
+        {(activeTab === 'all' || activeTab === 'chrome') && chromePasswords.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-xs font-medium text-text2 uppercase mb-2 flex items-center space-x-1">
+              <Chrome className="w-3 h-3" />
+              <span>Chrome 凭证</span>
+            </h4>
+            {chromePasswords.map(renderChromeCard)}
           </div>
         )}
 

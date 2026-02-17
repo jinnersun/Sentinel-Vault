@@ -9,6 +9,7 @@ export default function ApiKeysView() {
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [newKey, setNewKey] = useState({ name: '', key_value: '', scope: '' });
   const [visibleKeys, setVisibleKeys] = useState<Set<number>>(new Set());
+  const [deletingKeyId, setDeletingKeyId] = useState<number | null>(null);
 
   const loadApiKeys = async () => {
     try {
@@ -58,14 +59,34 @@ export default function ApiKeysView() {
     }
   };
 
+  // 修复：改进的删除逻辑
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个 API Key 吗？')) return;
+    // 检查是否已在删除中（防止多次点击）
+    if (deletingKeyId !== null) {
+      return;
+    }
+
+    if (!window.confirm('确定要删除这个 API Key 吗？')) {
+      return;
+    }
+
+    setDeletingKeyId(id);
 
     try {
+      // 关键修改：先调用后端 API，不做乐观更新
       await api.deleteApiKey(id);
-      await loadApiKeys();
+      
+      // 只有后端成功返回，才更新本地状态
+      setApiKeys(prev => prev.filter(k => k.id !== id));
+      
+      console.log('成功删除 API Key');
     } catch (e) {
-      console.error('Failed to delete API key', e);
+      console.error('删除失败', e);
+      alert(`删除失败，请重试\n${e instanceof Error ? e.message : '未知错误'}`);
+      // 失败时刷新，用来恢复数据
+      await loadApiKeys();
+    } finally {
+      setDeletingKeyId(null);
     }
   };
 

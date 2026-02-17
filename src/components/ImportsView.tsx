@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../lib/tauri-api';
+import { useApp } from '../contexts/AppContext';
 import { CheckCircle, Upload, FileText, Loader2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { open } from '@tauri-apps/api/dialog';
 
@@ -28,6 +29,7 @@ interface Decisions {
 }
 
 export default function ImportsView() {
+  const { state, refreshData } = useApp();
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [decisions, setDecisions] = useState<Decisions>({});
@@ -35,6 +37,9 @@ export default function ImportsView() {
   const [result, setResult] = useState<{imported: number; updated: number; skipped: number} | null>(null);
   const [showNewItems, setShowNewItems] = useState(true);
   const [showConflictItems, setShowConflictItems] = useState(true);
+
+  // 计算当前已存在的 Chrome 凭证数量
+  const existingChromeCount = state.vaultItems.filter(item => item.category === 'Chrome').length;
 
   const handleSelectFile = async () => {
     try {
@@ -53,10 +58,10 @@ export default function ImportsView() {
         const data = await api.parseAndCompareCsv(selected);
         setPreview(data);
         
-        // 默认决策：New 全部导入，Conflict 待用户决定
+        // 默认决策：New 和 Conflict 都初始化为 null（待用户决定）
         const defaultDecisions: Decisions = {};
         data.new_items.forEach(item => {
-          defaultDecisions[item.id] = 'import';
+          defaultDecisions[item.id] = null;
         });
         data.conflict_items.forEach(item => {
           defaultDecisions[item.id] = null;
@@ -102,20 +107,51 @@ export default function ImportsView() {
       return;
     }
 
+    await executeImport();
+  };
+
+  // 执行导入操作
+  const executeImport = async (singleItemId?: number, singleDecision?: string) => {
+    if (!preview) return;
+
     setProcessing(true);
     try {
-      const decisionList = Object.entries(decisions)
-        .filter(([, d]) => d !== null)
-        .map(([id, decision]) => ({
-          import_id: parseInt(id),
-          decision: decision as string
-        }));
+      let decisionList;
+      
+      if (singleItemId !== undefined && singleDecision) {
+        // 单条导入
+        decisionList = [{ import_id: singleItemId, decision: singleDecision }];
+      } else {
+        // 批量导入
+        decisionList = Object.entries(decisions)
+          .filter(([, d]) => d !== null)
+          .map(([id, decision]) => ({
+            import_id: parseInt(id),
+            decision: decision as string
+          }));
+      }
+
+      if (decisionList.length === 0) {
+        alert('没有选择任何记录导入');
+        setProcessing(false);
+        return;
+      }
 
       const res = await api.processImportBatch(preview.batch_id, decisionList);
-      setResult(res);
-      setPreview(null);
-      setDecisions({});
-      alert(`导入完成！新增: ${res.imported}, 更新: ${res.updated}, 跳过: ${res.skipped}`);
+      
+      if (singleItemId !== undefined) {
+        // 单条导入成功，更新决策状态为已导入（不刷新页面，不显示alert）
+        setDecision(singleItemId, 'import');
+        // 静默刷新数据
+        await refreshData();
+      } else {
+        // 批量导入完成
+        await refreshData();
+        setResult(res);
+        setPreview(null);
+        setDecisions({});
+        alert(`导入完成！新增: ${res.imported}, 更新: ${res.updated}, 跳过: ${res.skipped}`);
+      }
     } catch (error) {
       console.error('Failed to process import:', error);
       alert('导入失败: ' + (error instanceof Error ? error.message : String(error)));
@@ -196,6 +232,12 @@ export default function ImportsView() {
             <h3 className="text-lg font-medium mb-2">从 Chrome 导入密码</h3>
             <p className="text-text2 mb-6">选择 Chrome 导出的 CSV 文件，系统将自动对比并展示差异</p>
             
+            {/* 显示现有 Chrome 凭证数量 */}
+            <div className="bg-background rounded-lg p-4 mb-6">
+              <div className="text-3xl font-bold text-blue-500">{existingChromeCount}</div>
+              <div className="text-sm text-text2">现有 Chrome 凭证</div>
+            </div>
+            
             <div className="bg-background rounded-lg p-4 text-left text-sm text-text2">
               <h4 className="font-medium text-text mb-3 flex items-center">
                 <FileText className="w-4 h-4 mr-2" />
@@ -216,9 +258,13 @@ export default function ImportsView() {
           <div className="bg-surface border border-surface2 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
+                <div className="text-blue-500">
+                  <span className="text-2xl font-bold">{existingChromeCount}</span>
+                  <span className="ml-1">现有</span>
+                </div>
                 <div>
                   <span className="text-2xl font-bold">{preview.total_count}</span>
-                  <span className="text-text2 ml-1">总计</span>
+                  <span className="text-text2 ml-1">本次导入</span>
                 </div>
                 <div className="text-green-500">
                   <span className="text-2xl font-bold">{preview.new_items.length}</span>
@@ -360,14 +406,16 @@ export default function ImportsView() {
                       </div>
                       <div className="flex flex-col space-y-2">
                         <button
-                          onClick={() => setDecision(item.id, 'import')}
-                          className={`btn btn-sm ${decisions[item.id] === 'import' ? 'bg-green-500 text-white' : ''}`}
+                          onClick={() => executeImport(item.id, 'import')}
+                          disabled={processing || decisions[item.id] === 'import'}
+                          className={`btn btn-sm ${decisions[item.id] === 'import' ? 'bg-green-500 text-white cursor-not-allowed' : ''}`}
                         >
-                          {decisions[item.id] === 'import' ? '✓ 导入' : '导入'}
+                          {processing ? '处理中...' : (decisions[item.id] === 'import' ? '✓ 已导入' : '导入')}
                         </button>
                         <button
                           onClick={() => setDecision(item.id, 'skip')}
-                          className={`btn-secondary btn-sm ${decisions[item.id] === 'skip' ? 'bg-gray-500 text-white' : ''}`}
+                          disabled={decisions[item.id] === 'import'}
+                          className={`btn-secondary btn-sm ${decisions[item.id] === 'skip' ? 'bg-gray-500 text-white' : ''} ${decisions[item.id] === 'import' ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {decisions[item.id] === 'skip' ? '✓ 跳过' : '跳过'}
                         </button>

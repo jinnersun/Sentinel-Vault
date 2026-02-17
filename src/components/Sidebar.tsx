@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { FolderPlus, Settings, Download, Upload, Edit2, Trash2, Key, Server } from 'lucide-react';
+import { FolderPlus, Settings, Download, Upload, Edit2, Trash2, Key, Server, Shield, AlertTriangle, Globe, ShieldCheck } from 'lucide-react';
 import type { Project } from '../types';
 import api from '../lib/tauri-api';
 import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
@@ -11,6 +11,27 @@ export default function Sidebar() {
   const [newProjectName, setNewProjectName] = useState('');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState('');
+  const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
+  const [alertCount, setAlertCount] = useState(0);
+
+  // 加载安全提醒数量
+  useEffect(() => {
+    const loadAlertCount = async () => {
+      try {
+        const overview = await api.getSecurityOverview();
+        const total = overview.rotation_overdue + overview.rotation_warning +
+                     overview.expiry_overdue + overview.expiry_warning;
+        setAlertCount(total);
+        dispatch({ type: 'SET_SECURITY_ALERT_COUNT', payload: total });
+      } catch (error) {
+        console.error('Failed to load security alert count:', error);
+      }
+    };
+    loadAlertCount();
+    // 每30秒刷新一次
+    const interval = setInterval(loadAlertCount, 30000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   // 检查未保存更改并执行操作
   const checkUnsavedAndExecute = async (action: () => void) => {
@@ -107,20 +128,50 @@ export default function Sidebar() {
     }
   };
 
-  const handleDeleteProject = async (project: Project) => {
-    if (!confirm(`确定要删除项目 "${project.name}" 吗？\n注意：该项目下的所有关联将被移除，但凭证不会被删除。`)) {
+  // 修复：改进的删除逻辑
+  const handleDeleteProject = async (e: React.MouseEvent, project: Project) => {
+    // 1. 必须优先切断冒泡，防止触发父级的 onClick 选中逻辑
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 修复：检查是否已在删除中（防止多次点击）
+    if (deletingProjectId !== null) {
       return;
     }
 
+    // 2. 使用异步确认对话框，确保UI不会提前更新
+    const confirmed = await new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        const result = window.confirm(`确定要删除项目 "${project.name}" 吗？\n注意：该项目下的所有关联将被移除，但凭证不会被删除。`);
+        resolve(result);
+      }, 0);
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingProjectId(project.id ?? null);
+
     try {
+      // 关键修改：先调用后端 API，不做乐观更新
       await api.deleteProject(project.id!);
-      await refreshData();
+      
+      // 只有后端成功返回，才更新本地 Redux 状态
+      dispatch({ type: 'DELETE_PROJECT', payload: project.id! });
+      
+      // 如果当前选中的是被删除的项目，清空选中状态
       if (state.selectedProject === project.id) {
         dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
       }
+      
+      console.log(`成功删除项目 "${project.name}"`);
     } catch (error) {
-      console.error('Failed to delete project:', error);
-      alert('删除项目失败');
+      console.error('删除失败:', error);
+      alert(`删除 "${project.name}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      // 失败时不需要调用 refreshData，因为我们从未修改本地状态
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -196,8 +247,7 @@ export default function Sidebar() {
               </button>
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteProject(project);
+                  handleDeleteProject(e, project);
                 }}
                 className="p-1 hover:bg-surface rounded"
                 title="删除项目"
@@ -275,6 +325,71 @@ export default function Sidebar() {
         >
           <Key className="w-4 h-4" />
           <span className="text-sm font-semibold">API Keys 仓库</span>
+        </button>
+      </div>
+
+      {/* 域名管理 */}
+      <div className="p-2">
+        <button 
+          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
+            state.currentView === 'domains' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'domains' });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
+        >
+          <Globe className="w-4 h-4" />
+          <span className="text-sm font-semibold">域名管理</span>
+        </button>
+      </div>
+
+      {/* SSL证书 */}
+      <div className="p-2">
+        <button 
+          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
+            state.currentView === 'certificates' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'certificates' });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span className="text-sm font-semibold">SSL证书</span>
+        </button>
+      </div>
+
+      {/* 安全中心 */}
+      <div className="p-2">
+        <button 
+          className={`flex items-center justify-between p-3 rounded-lg w-full transition-all ${
+            state.currentView === 'security' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+          }`}
+          onClick={() => {
+            checkUnsavedAndExecute(() => {
+              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'security' });
+              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+            });
+          }}
+        >
+          <div className="flex items-center space-x-2">
+            <Shield className="w-4 h-4" />
+            <span className="text-sm font-semibold">安全中心</span>
+          </div>
+          {alertCount > 0 && (
+            <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+              <AlertTriangle className="w-3 h-3" />
+              {alertCount}
+            </span>
+          )}
         </button>
       </div>
 

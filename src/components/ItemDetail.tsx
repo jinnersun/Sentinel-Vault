@@ -49,15 +49,41 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
     onEditItem(state.selectedItem);
   };
 
+  // 修复：改进的删除逻辑
   const handleDelete = async () => {
-    if (window.confirm(`确定要删除 "${state.selectedItem!.title}" 吗？`)) {
-      try {
-        await api.deleteVaultItem(state.selectedItem!.id!);
-        dispatch({ type: 'DELETE_VAULT_ITEM', payload: state.selectedItem!.id! });
-        dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-      } catch (error) {
-        console.error('Failed to delete item:', error);
-      }
+    const itemTitle = state.selectedItem!.title;
+    
+    // 使用异步确认对话框，确保UI不会提前更新
+    const confirmed = await new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        const result = window.confirm(`确定要删除 "${itemTitle}" 吗？`);
+        resolve(result);
+      }, 0);
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const itemId = state.selectedItem!.id!;
+
+    try {
+      // 关键修改：先调用后端 API，不做乐观更新
+      // 这样即使用户等待确认，UI 也不会瞬间消失
+      await api.deleteVaultItem(itemId);
+      
+      // 只有后端成功返回，才更新本地 Redux 状态
+      dispatch({ type: 'DELETE_VAULT_ITEM', payload: itemId });
+      dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+      
+      // 可选：显示成功提示
+      console.log(`成功删除凭证 "${itemTitle}"`);
+      
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert(`删除 "${itemTitle}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      // 失败时不需要调用 refreshData，因为我们从未修改本地状态
+      // 用户可以重新尝试删除
     }
   };
 

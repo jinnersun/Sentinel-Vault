@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Copy, Edit, Trash2, Plus } from 'lucide-react';
 import api from '../lib/tauri-api';
@@ -6,6 +7,8 @@ import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
 
 export default function VaultList({ onEditItem }: { onEditItem: (item: any) => void }) {
   const { state, dispatch } = useApp();
+  // 记录正在删除的项目 ID，避免多次点击
+  const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
 
   // 检查未保存更改并执行操作
   const checkUnsavedAndExecute = async (action: () => void) => {
@@ -51,21 +54,58 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
     }
   };
 
-  const handleDelete = async (item: any) => {
-    if (window.confirm(`确定要删除 "${item.title}" 吗？`)) {
-      try {
-        await api.deleteVaultItem(item.id!);
-        dispatch({ type: 'DELETE_VAULT_ITEM', payload: item.id });
-        
-        // Clear selection if this was the selected item
-        if (state.selectedItem?.id === item.id) {
-          dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-        }
-      } catch (error) {
-        console.error('Failed to delete item:', error);
+  // 修复：改进的删除逻辑
+  const handleDelete = async (e: React.MouseEvent, item: any) => {
+    // 1. 必须优先切断冒泡，防止触发父级的 onClick 选中逻辑
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 修复：检查是否已在删除中（防止多次点击）
+    if (deletingItemId !== null) {
+      return;
+    }
+
+    // 2. 使用异步确认对话框，确保UI不会提前更新
+    const confirmed = await new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        const result = window.confirm(`确定要删除 "${item.title}" 吗？`);
+        resolve(result);
+      }, 0);
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingItemId(item.id);
+
+    try {
+      // 关键修改：先调用后端 API，不做乐观更新
+      // 这样即使用户等待确认，UI 也不会瞬间消失
+      await api.deleteVaultItem(item.id!);
+      
+      // 只有后端成功返回，才更新本地 Redux 状态
+      dispatch({ type: 'DELETE_VAULT_ITEM', payload: item.id });
+      
+      // 如果当前选中的就是这个项，才清除选中
+      if (state.selectedItem?.id === item.id) {
+        dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
       }
+      
+      console.log(`成功删除凭证 "${item.title}"`);
+      
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert(`删除 "${item.title}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      // 失败时不需要调用 refreshData，因为我们从未修改本地状态
+      
+    } finally {
+      setDeletingItemId(null);
     }
   };
+
+  // 计算 Chrome 凭证数量
+  const chromeCount = state.vaultItems.filter(item => item.category === 'Chrome').length;
 
   // 过滤逻辑：根据 selectedCategory 和 searchQuery
   const filteredItems = state.vaultItems.filter(item => {
@@ -103,11 +143,18 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
       {/* Header */}
       <div className="p-4 border-b border-surface2">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">
-            {state.selectedProject
-              ? state.projects.find(p => p.id === state.selectedProject)?.name || '项目'
-              : '全部条目'}
-          </h2>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-lg font-semibold text-text">
+              {state.selectedProject
+                ? state.projects.find(p => p.id === state.selectedProject)?.name || '项目'
+                : '全部条目'}
+            </h2>
+            {chromeCount > 0 && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                Chrome: {chromeCount}
+              </span>
+            )}
+          </div>
           <button
             onClick={() => onEditItem(null)} // null indicates new item
             className="p-1 hover:bg-surface2 rounded transition-colors"
@@ -222,8 +269,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
             </button>
                 <button
                   onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(item);
+                    handleDelete(e, item);
                   }}
                   className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-error"
                   title="删除"

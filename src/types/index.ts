@@ -45,7 +45,7 @@ export interface UpdateVaultItemRequest extends Partial<CreateVaultItemRequest> 
 
 export type CopyFormat = 'raw' | 'env' | 'json';
 
-export type ViewType = 'vault' | 'imports' | 'apikeys' | 'settings' | 'infrastructure';
+export type ViewType = 'vault' | 'imports' | 'apikeys' | 'settings' | 'infrastructure' | 'security' | 'domains' | 'certificates';
 
 // 基础设施资产类型
 export interface ServerAsset {
@@ -54,6 +54,20 @@ export interface ServerAsset {
   os: 'Linux' | 'Windows' | 'macOS' | string;
   ssh_user?: string;
   description?: string;
+  // 扩展字段
+  ssh_key?: string;           // SSH 私钥（用于密钥登录）
+  ssl_cert?: string;          // SSL 证书内容
+  ssl_key?: string;           // SSL 私钥内容
+  region?: string;            // 服务器区域/机房
+  provider?: string;          // 云服务商（阿里云/AWS/腾讯云等）
+  tags?: string[];            // 标签数组
+  status?: 'running' | 'stopped' | 'maintenance' | string;  // 服务器状态
+  // 租期相关字段
+  server_start_date?: string;      // 服务器租期开始时间
+  server_end_date?: string;        // 服务器租期结束时间
+  server_is_permanent?: boolean;   // 是否永久使用
+  server_enable_expiry_alert?: boolean;  // 是否启用到期提醒
+  server_expiry_alert_days?: number;     // 到期前提醒天数（默认30）
 }
 
 export interface DatabaseAsset {
@@ -64,7 +78,16 @@ export interface DatabaseAsset {
   username?: string;
   description?: string;
   admin_url?: string;
+  // 租期相关字段
+  service_start_date?: string;      // 服务租期开始时间
+  service_end_date?: string;        // 服务租期结束时间
+  service_is_permanent?: boolean;   // 是否永久使用
+  service_enable_expiry_alert?: boolean;  // 是否启用到期提醒
+  service_expiry_alert_days?: number;     // 到期前提醒天数（默认30）
 }
+
+// 导出安全中心类型
+export * from './security';
 
 // 解析 notes 字段中的基础设施资产信息
 export function parseAssetNotes(notes?: string): { type: 'server' | 'database' | null; data: ServerAsset | DatabaseAsset | null } {
@@ -113,4 +136,16 @@ export interface AppState {
   currentView: ViewType;
   hasUnsavedChanges: boolean;
   saveCallback: (() => Promise<void>) | null;
+  securityAlertCount: number;  // 安全中心提醒数量
+}
+
+// 域名信息查询结果 (RDAP)
+export interface DomainInfoResult {
+  domain: string;
+  registrar: string | null;
+  registration_date: string | null;
+  expiry_date: string | null;
+  name_servers: string[];
+  status: string[];
+  source: string; // "rdap" | "rdap-bootstrap" | "unavailable"
 }

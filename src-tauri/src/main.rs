@@ -21,6 +21,12 @@ use commands::{
             parse_and_compare_csv, process_import_batch, get_vault_history, read_project_readme,
     copy_to_clipboard, fetch_favicon,
     set_master_password, verify_master_password, has_master_password,
+    get_setting, update_setting, backup_database, clear_all_data,
+    update_vault_item_security, get_security_overview, get_security_alerts,
+    upload_certificate, get_certificates, delete_certificate, read_certificate_file,
+    copy_certificate_to_clipboard, get_certificate_file_path,
+    get_domains, create_domain, update_domain, delete_domain, link_domain_server, unlink_domain_server, get_expiring_domains,
+    fetch_domain_info, sync_domain_info,
 };
 
 fn main() {
@@ -58,6 +64,28 @@ fn main() {
             process_import_batch,
             get_vault_history,
             read_project_readme,
+            get_setting,
+            update_setting,
+            backup_database,
+            clear_all_data,
+            update_vault_item_security,
+            get_security_overview,
+            get_security_alerts,
+            upload_certificate,
+            get_certificates,
+            delete_certificate,
+            read_certificate_file,
+            copy_certificate_to_clipboard,
+            get_certificate_file_path,
+            get_domains,
+            create_domain,
+            update_domain,
+            delete_domain,
+            link_domain_server,
+            unlink_domain_server,
+            get_expiring_domains,
+            fetch_domain_info,
+            sync_domain_info,
         ])
         .setup(|_app| {
             // Initialize database on startup

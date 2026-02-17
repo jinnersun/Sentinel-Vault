@@ -16,9 +16,11 @@ type AppAction =
   | { type: 'UPDATE_VAULT_ITEM'; payload: { id: number; item: VaultItem } }
   | { type: 'DELETE_VAULT_ITEM'; payload: number }
   | { type: 'ADD_PROJECT'; payload: Project }
+  | { type: 'DELETE_PROJECT'; payload: number }
   | { type: 'SET_CURRENT_VIEW'; payload: import('../types').ViewType }
   | { type: 'SET_UNSAVED_CHANGES'; payload: boolean }
-  | { type: 'SET_SAVE_CALLBACK'; payload: (() => Promise<void>) | null };
+  | { type: 'SET_SAVE_CALLBACK'; payload: (() => Promise<void>) | null }
+  | { type: 'SET_SECURITY_ALERT_COUNT'; payload: number };
 
 const initialState: AppState = {
   vaultItems: [],
@@ -33,6 +35,7 @@ const initialState: AppState = {
   currentView: 'vault',
   hasUnsavedChanges: false,
   saveCallback: null,
+  securityAlertCount: 0,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -71,12 +74,20 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
     case 'ADD_PROJECT':
       return { ...state, projects: [...state.projects, action.payload] };
+    case 'DELETE_PROJECT':
+      return {
+        ...state,
+        projects: state.projects.filter(p => p.id !== action.payload),
+        selectedProject: state.selectedProject === action.payload ? null : state.selectedProject
+      };
     case 'SET_CURRENT_VIEW':
       return { ...state, currentView: action.payload };
     case 'SET_UNSAVED_CHANGES':
       return { ...state, hasUnsavedChanges: action.payload };
     case 'SET_SAVE_CALLBACK':
       return { ...state, saveCallback: action.payload };
+    case 'SET_SECURITY_ALERT_COUNT':
+      return { ...state, securityAlertCount: action.payload };
     default:
       return state;
   }
@@ -92,9 +103,13 @@ const AppContext = createContext<{
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  const refreshData = async () => {
+  const refreshData = async (silent: boolean = false) => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      // 只有在非静默模式下才显示全屏 Loading
+      if (!silent) {
+        dispatch({ type: 'SET_LOADING', payload: true });
+      }
+      
       const [projects, projectCounts] = await Promise.all([
         api.getProjects(),
         api.getProjectCounts(),
@@ -116,7 +131,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to refresh data:', error);
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      // 只有在非静默模式下才重置全局 Loading
+      if (!silent) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     }
   };
 
@@ -158,7 +176,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // When selected project changes, refresh vault items accordingly
   useEffect(() => {
     // avoid calling on initial mount (refreshData already called)
-    refreshData();
+    // 使用静默刷新，避免切换项目/分类时出现全屏 Loading
+    refreshData(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedProject]);
 
