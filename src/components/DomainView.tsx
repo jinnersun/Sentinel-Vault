@@ -44,7 +44,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
 
   // 检查域名是否即将过期
   const getExpiryStatus = (expiryDate?: string) => {
-    if (!expiryDate) return 'unknown';
+    if (!expiryDate) return '';
     const daysUntilExpiry = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntilExpiry < 0) return 'expired';
     if (daysUntilExpiry <= 7) return 'warning';
@@ -90,10 +90,15 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
     try {
       setSyncingDomain(domain.id);
       const result = await api.syncDomainInfo(domain.id, domain.domain);
-      setSyncedDomain(domain.id);
-      await loadDomains();
-      // 显示同步结果弹窗
+      
+      // 先显示结果，让用户看到获取到了什么
       setSyncResult({ domain: domain.domain, result });
+      
+      // 强制刷新域名列表
+      await loadDomains();
+      
+      // 标记同步成功
+      setSyncedDomain(domain.id);
       setTimeout(() => setSyncedDomain(null), 2000);
     } catch (error) {
       console.error('Failed to sync domain:', error);
@@ -229,9 +234,11 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">{domain.domain}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(expiryStatus)}`}>
-                          {getStatusText(expiryStatus)}
-                        </span>
+                        {expiryStatus && (
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(expiryStatus)}`}>
+                            {getStatusText(expiryStatus)}
+                          </span>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
