@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, Clock, RefreshCw, Key, Server, Database, Globe, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, RefreshCw, Key, Server, Database, Globe, AlertCircle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import type { SecurityOverview, SecurityAlert } from '../types';
 import api from '../lib/tauri-api';
 
@@ -7,11 +7,29 @@ interface SecurityCenterProps {
   onClose: () => void;
 }
 
+// 影响链数据结构
+interface ImpactChain {
+  id: string;
+  type: 'certificate' | 'domain' | 'server' | 'database' | 'api_key';
+  severity: 'overdue' | 'warning' | 'normal';
+  title: string;
+  description: string;
+  dueDate?: string;
+  // 影响范围
+  impactedItems: {
+    type: string;
+    name: string;
+    severity?: string;
+  }[];
+}
+
 const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
   const [overview, setOverview] = useState<SecurityOverview | null>(null);
-  const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
+  const [, setAlerts] = useState<SecurityAlert[]>([]);
+  const [impactChains, setImpactChains] = useState<ImpactChain[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rotation' | 'expiry'>('overview');
+  const [activeTab, setActiveTab] = useState<'topology' | 'overview'>('topology');
+  const [expandedChains, setExpandedChains] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadSecurityData();
@@ -26,11 +44,41 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
       ]);
       setOverview(overviewData);
       setAlerts(alertsData);
+      
+      // 将alerts转换为impactChains格式
+      const chains = generateImpactChains(alertsData);
+      setImpactChains(chains);
     } catch (error) {
       console.error('Failed to load security data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 生成影响链数据
+  const generateImpactChains = (alerts: SecurityAlert[]): ImpactChain[] => {
+    return alerts.map((alert) => ({
+      id: `chain-${alert.id}`,
+      type: alert.alert_type as any,
+      severity: alert.severity,
+      title: alert.title,
+      description: alert.description,
+      dueDate: alert.due_date,
+      impactedItems: [
+        { type: alert.item_category, name: alert.title, severity: alert.severity }
+      ]
+    }));
+  };
+
+  // 切换影响链展开状态
+  const toggleChain = (chainId: string) => {
+    const newExpanded = new Set(expandedChains);
+    if (newExpanded.has(chainId)) {
+      newExpanded.delete(chainId);
+    } else {
+      newExpanded.add(chainId);
+    }
+    setExpandedChains(newExpanded);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -59,17 +107,28 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
     }
   };
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'certificate':
+        return <Shield className="w-4 h-4" />;
+      case 'domain':
+        return <Globe className="w-4 h-4" />;
+      case 'server':
+        return <Server className="w-4 h-4" />;
+      case 'database':
+        return <Database className="w-4 h-4" />;
+      case 'api_key':
+        return <Key className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
   const getTotalAlerts = () => {
     if (!overview) return 0;
     return overview.rotation_overdue + overview.rotation_warning +
            overview.expiry_overdue + overview.expiry_warning;
   };
-
-  const filteredAlerts = alerts.filter(alert => {
-    if (activeTab === 'rotation') return alert.alert_type === 'rotation';
-    if (activeTab === 'expiry') return alert.alert_type === 'expiry';
-    return true;
-  });
 
   if (loading) {
     return (
@@ -90,7 +149,7 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">安全中心</h1>
-              <p className="text-sm text-gray-500">监控密码轮换和API过期提醒</p>
+              <p className="text-sm text-gray-500">异常聚合器 - 监控证书、域名、服务器到期提醒</p>
             </div>
           </div>
           <button
@@ -118,9 +177,8 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
       <div className="bg-white border-b px-6">
         <div className="flex gap-1">
           {[
+            { id: 'topology', label: '拓扑告警', icon: AlertTriangle },
             { id: 'overview', label: '概览', icon: Shield },
-            { id: 'rotation', label: '轮换提醒', icon: RefreshCw },
-            { id: 'expiry', label: '过期提醒', icon: Clock },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -140,6 +198,107 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
+        {/* 拓扑告警视图 */}
+        {activeTab === 'topology' && (
+          <div className="space-y-4">
+            {impactChains.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                <p>暂无异常影响链</p>
+                <p className="text-sm text-gray-400 mt-2">所有证书、域名、服务器状态正常</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-900">
+                    异常影响链 ({impactChains.length} 个)
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    点击展开查看完整影响范围
+                  </p>
+                </div>
+                
+                {impactChains.map((chain) => (
+                  <div
+                    key={chain.id}
+                    className={`bg-white rounded-lg shadow-sm border overflow-hidden ${
+                      chain.severity === 'overdue' ? 'border-red-200' : 
+                      chain.severity === 'warning' ? 'border-yellow-200' : 'border-gray-200'
+                    }`}
+                  >
+                    {/* 影响链头部 */}
+                    <div
+                      className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                        getSeverityColor(chain.severity)
+                      }`}
+                      onClick={() => toggleChain(chain.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {expandedChains.has(chain.id) ? (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                        )}
+                        {getSeverityIcon(chain.severity)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {getTypeIcon(chain.type)}
+                            <span className="font-medium">{chain.title}</span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                              chain.severity === 'overdue' ? 'bg-red-100 text-red-600' :
+                              chain.severity === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-green-100 text-green-600'
+                            }`}>
+                              {chain.severity === 'overdue' ? '已过期' :
+                               chain.severity === 'warning' ? '即将到期' : '正常'}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-1">{chain.description}</p>
+                          {chain.dueDate && (
+                            <p className="text-xs mt-1 opacity-75">
+                              到期时间: {chain.dueDate}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 展开的影响范围 */}
+                    {expandedChains.has(chain.id) && chain.impactedItems.length > 0 && (
+                      <div className="border-t bg-gray-50 p-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">影响范围:</h4>
+                        <div className="space-y-2">
+                          {chain.impactedItems.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-3 pl-8 py-2"
+                            >
+                              <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                              <span className="text-sm text-gray-500">{item.type}:</span>
+                              <span className="text-sm font-medium">{item.name}</span>
+                              {item.severity && (
+                                <span className={`px-2 py-0.5 text-xs rounded ${
+                                  item.severity === 'overdue' ? 'bg-red-100 text-red-600' :
+                                  item.severity === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                                  'bg-green-100 text-green-600'
+                                }`}>
+                                  {item.severity === 'overdue' ? '异常' :
+                                   item.severity === 'warning' ? '警告' : '正常'}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 概览视图 */}
         {activeTab === 'overview' && overview && (
           <div className="space-y-6">
             {/* Stats Cards */}
@@ -219,46 +378,6 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
                 />
               </div>
             </div>
-          </div>
-        )}
-
-        {(activeTab === 'rotation' || activeTab === 'expiry') && (
-          <div className="space-y-4">
-            {filteredAlerts.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                <p>暂无相关提醒</p>
-              </div>
-            ) : (
-              filteredAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`bg-white rounded-lg shadow-sm border p-4 ${getSeverityColor(alert.severity)}`}
-                >
-                  <div className="flex items-start gap-4">
-                    {getSeverityIcon(alert.severity)}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">
-                          {alert.title}
-                        </span>
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-                          {alert.item_category}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {alert.description}
-                      </p>
-                      {alert.due_date && (
-                        <p className="text-xs text-gray-500">
-                          到期时间: {alert.due_date}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         )}
       </div>
