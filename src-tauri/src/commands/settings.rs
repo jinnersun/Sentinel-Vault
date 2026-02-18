@@ -150,11 +150,15 @@ pub async fn clear_all_data() -> Result<(), String> {
     sqlx::query("DELETE FROM vault_history").execute(&pool).await.map_err(|e| e.to_string())?;
     sqlx::query("DELETE FROM chrome_imported_passwords").execute(&pool).await.map_err(|e| e.to_string())?;
     sqlx::query("DELETE FROM import_logs").execute(&pool).await.map_err(|e| e.to_string())?;
+    sqlx::query("DELETE FROM domain_server_relations").execute(&pool).await.map_err(|e| e.to_string())?;
+    sqlx::query("DELETE FROM certificate_domain_relations").execute(&pool).await.map_err(|e| e.to_string())?;
     
     // 2. 再清空主表
     sqlx::query("DELETE FROM api_keys_registry").execute(&pool).await.map_err(|e| e.to_string())?;
     sqlx::query("DELETE FROM vault").execute(&pool).await.map_err(|e| e.to_string())?;
     sqlx::query("DELETE FROM projects").execute(&pool).await.map_err(|e| e.to_string())?;
+    sqlx::query("DELETE FROM domains").execute(&pool).await.map_err(|e| e.to_string())?;
+    sqlx::query("DELETE FROM ssl_certificates").execute(&pool).await.map_err(|e| e.to_string())?;
     
     Ok(())
 }
