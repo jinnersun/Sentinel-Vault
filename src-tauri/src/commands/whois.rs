@@ -330,48 +330,51 @@ pub async fn sync_domain_info(domain_id: i64, domain: String) -> Result<DomainIn
         
         let pool = get_db_pool().await.map_err(|e| e.to_string())?;
         
-        // 构建动态更新查询
-        let mut update_parts = Vec::new();
+        // 构建动态更新查询 - 修复参数绑定顺序问题
+        // 使用固定顺序：expiry_date, registrar, registration_date
+        let has_expiry = result.expiry_date.is_some();
+        let has_registrar = result.registrar.is_some();
+        let has_reg_date = result.registration_date.is_some();
         
-        if result.expiry_date.is_some() {
-            update_parts.push("expiry_date = ?");
-        }
-        
-        if result.registrar.is_some() {
-            update_parts.push("registrar = ?");
-        }
-        
-        if result.registration_date.is_some() {
-            update_parts.push("registration_date = ?");
-        }
-        
-        if !update_parts.is_empty() {
-            update_parts.push("updated_at = CURRENT_TIMESTAMP");
+        if has_expiry || has_registrar || has_reg_date {
+            let mut set_clauses = Vec::new();
+            
+            if has_expiry {
+                set_clauses.push("expiry_date = ?");
+            }
+            if has_registrar {
+                set_clauses.push("registrar = ?");
+            }
+            if has_reg_date {
+                set_clauses.push("registration_date = ?");
+            }
+            set_clauses.push("updated_at = CURRENT_TIMESTAMP");
             
             let query = format!(
                 "UPDATE domains SET {} WHERE id = ?",
-                update_parts.join(", ")
+                set_clauses.join(", ")
             );
             
             let mut sql = sqlx::query(&query);
             
+            // 必须按固定顺序绑定参数
             if let Some(ref expiry) = result.expiry_date {
                 sql = sql.bind(expiry);
             }
-            
             if let Some(ref registrar) = result.registrar {
                 sql = sql.bind(registrar);
             }
-            
             if let Some(ref reg_date) = result.registration_date {
                 sql = sql.bind(reg_date);
             }
             
             sql = sql.bind(domain_id);
             
-            sql.execute(&pool)
+            let result = sql.execute(&pool)
                 .await
                 .map_err(|e| e.to_string())?;
+            
+            println!("Updated {} row(s) for domain_id {}", result.rows_affected(), domain_id);
         }
     }
     
