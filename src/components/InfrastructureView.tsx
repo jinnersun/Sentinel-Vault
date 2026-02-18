@@ -114,15 +114,41 @@ export default function InfrastructureView() {
     }
   };
 
-  // 修复：改进的删除逻辑
+  // 检查服务器关联的域名
+  const checkServerRelations = async (serverId: number): Promise<{ domains: string[] }> => {
+    try {
+      const domains = await api.getServerDomains(serverId);
+      return { domains: domains.map(d => d.domain) };
+    } catch (error) {
+      console.error('检查关联失败:', error);
+      return { domains: [] };
+    }
+  };
+
+  // 修复：改进的删除逻辑，带有关联检查
   const handleDelete = async (item: typeof infrastructureItems[0]) => {
     // 检查是否已在删除中（防止多次点击）
     if (deletingItemId !== null) {
       return;
     }
 
-    if (!window.confirm(`确定要删除 "${item.title}" 吗？`)) {
-      return;
+    // 对于服务器类型，检查关联的域名
+    if (item.category === 'Server' && item.id) {
+      const relations = await checkServerRelations(item.id);
+      if (relations.domains.length > 0) {
+        const confirmMsg = `服务器 "${item.title}" 关联了以下域名：\n${relations.domains.join(', ')}\n\n删除服务器将同时解除这些关联关系。是否继续？`;
+        if (!window.confirm(confirmMsg)) {
+          return;
+        }
+      } else {
+        if (!window.confirm(`确定要删除服务器 "${item.title}" 吗？`)) {
+          return;
+        }
+      }
+    } else {
+      if (!window.confirm(`确定要删除 "${item.title}" 吗？`)) {
+        return;
+      }
     }
 
     setDeletingItemId(item.id ?? null);

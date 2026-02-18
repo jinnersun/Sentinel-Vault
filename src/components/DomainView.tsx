@@ -72,10 +72,22 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除此域名吗？')) return;
+  const handleDelete = async (domain: Domain) => {
+    // 检查关联关系
+    const hasServers = domain.servers && domain.servers.length > 0;
+    const hasCertificates = domain.certificates && domain.certificates.length > 0;
+    
+    let confirmMsg = '确定要删除此域名吗？';
+    if (hasServers || hasCertificates) {
+      const relations: string[] = [];
+      if (hasServers) relations.push(`${domain.servers!.length} 个服务器`);
+      if (hasCertificates) relations.push(`${domain.certificates!.length} 个证书`);
+      confirmMsg = `域名 "${domain.domain}" 关联了 ${relations.join('、')}。\n\n删除域名将同时解除这些关联关系。是否继续？`;
+    }
+    
+    if (!confirm(confirmMsg)) return;
     try {
-      await api.deleteDomain(id);
+      await api.deleteDomain(domain.id!);
       await loadDomains();
     } catch (error) {
       console.error('Failed to delete domain:', error);
@@ -340,7 +352,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(domain.id!)}
+                        onClick={() => handleDelete(domain)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="删除"
                       >
