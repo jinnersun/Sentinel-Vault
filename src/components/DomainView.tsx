@@ -57,7 +57,8 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       case 'expired': return 'text-red-500 bg-red-50';
       case 'warning': return 'text-yellow-500 bg-yellow-50';
       case 'normal': return 'text-green-500 bg-green-50';
-      default: return 'text-gray-500 bg-gray-50';
+      case 'good': return 'text-green-500 bg-green-50';
+      default: return '';
     }
   };
 
@@ -66,7 +67,8 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       case 'expired': return '已过期';
       case 'warning': return '即将过期';
       case 'normal': return '正常';
-      default: return '未知';
+      case 'good': return '良好';
+      default: return '';
     }
   };
 
