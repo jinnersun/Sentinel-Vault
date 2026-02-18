@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Search, Server, Shield, Trash2, Edit2, RefreshCw, CheckCircle } from 'lucide-react';
+import { Globe, Plus, Search, Server, Shield, Trash2, Edit2, RefreshCw, CheckCircle, Link2, X } from 'lucide-react';
 import type { Domain } from '../types';
 import api from '../lib/tauri-api';
 
@@ -13,6 +13,9 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingDomain, setEditingDomain] = useState<Domain | null>(null);
+  const [linkingDomain, setLinkingDomain] = useState<Domain | null>(null);
+  const [servers, setServers] = useState<{ id: number; title: string; ip?: string }[]>([]);
+  const [loadingServers, setLoadingServers] = useState(false);
 
   // 加载域名列表
   const loadDomains = async () => {
@@ -94,6 +97,56 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       alert('同步域名信息失败，请稍后重试');
     } finally {
       setSyncingDomain(null);
+    }
+  };
+
+  // 加载服务器列表
+  const loadServers = async () => {
+    try {
+      setLoadingServers(true);
+      // 从 vault 中获取服务器类型的条目
+      const items = await api.getVaultItems();
+      const serverItems = items.filter(item => item.category === 'Server');
+      setServers(serverItems.map(item => ({
+        id: item.id!,
+        title: item.title,
+        ip: item.notes ? JSON.parse(item.notes)?.ip : undefined,
+      })));
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+    } finally {
+      setLoadingServers(false);
+    }
+  };
+
+  // 打开关联弹窗
+  const openLinkModal = async (domain: Domain) => {
+    setLinkingDomain(domain);
+    await loadServers();
+  };
+
+  // 关联服务器
+  const handleLinkServer = async (serverId: number) => {
+    if (!linkingDomain?.id) return;
+    try {
+      await api.linkDomainServer(linkingDomain.id, serverId);
+      await loadDomains();
+      // 保持弹窗打开，刷新关联状态
+    } catch (error) {
+      console.error('Failed to link server:', error);
+      alert('关联服务器失败');
+    }
+  };
+
+  // 解除关联服务器
+  const handleUnlinkServer = async (serverId: number) => {
+    if (!linkingDomain?.id) return;
+    try {
+      await api.unlinkDomainServer(linkingDomain.id, serverId);
+      await loadDomains();
+    } catch (error) {
+      console.error('Failed to unlink server:', error);
+      alert('解除关联失败');
     }
   };
 
@@ -214,6 +267,13 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => openLinkModal(domain)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="关联服务器"
+                      >
+                        <Link2 className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleSyncDomain(domain)}
                         disabled={syncingDomain === domain.id}
                         className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
@@ -249,6 +309,74 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Link Server Modal */}
+      {linkingDomain && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">关联服务器 - {linkingDomain.domain}</h3>
+              <button
+                onClick={() => setLinkingDomain(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {loadingServers ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : servers.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">暂无服务器，请先创建服务器资产</p>
+              ) : (
+                <div className="space-y-2">
+                  {servers.map(server => {
+                    const isLinked = linkingDomain.servers?.some(s => s.id === server.id);
+                    return (
+                      <div
+                        key={server.id}
+                        className={`flex items-center justify-between p-3 rounded-lg border ${
+                          isLinked ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Server className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <p className="font-medium">{server.title}</p>
+                            {server.ip && <p className="text-sm text-gray-500">{server.ip}</p>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => isLinked ? handleUnlinkServer(server.id) : handleLinkServer(server.id)}
+                          className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                            isLinked
+                              ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                              : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                          }`}
+                        >
+                          {isLinked ? '解除关联' : '关联'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => setLinkingDomain(null)}
+                className="w-full py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {(showAddModal || editingDomain) && (
