@@ -177,8 +177,8 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-surface border-r border-surface2 flex flex-col h-full overflow-hidden">
-      {/* 模块 1: 项目 (占据上方 50% 空间并可滚动) */}
-      <div className="flex-[0.5] flex flex-col min-h-0 border-b border-surface2">
+      {/* 模块 1: 项目 (占据大部分空间并可滚动) */}
+      <div className="flex-1 flex flex-col min-h-0 border-b border-surface2">
         <div className="p-4 flex items-center justify-between flex-shrink-0">
           <h2 className="text-xs font-bold text-text2 uppercase">我的项目</h2>
           <button
@@ -260,141 +260,144 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* 模块 2: Chrome 浏览器凭证 (中间区域) */}
-      <div className="p-2 border-b border-surface2">
-        <div className="flex items-center space-x-2 mb-2">
+      {/* 功能菜单区域 - 紧凑排列在设置上方 */}
+      <div className="flex-shrink-0">
+        {/* Chrome 凭证 */}
+        <div className="p-2 border-b border-surface2">
+          <div className="flex items-center space-x-2">
+            <button 
+              className={`flex-1 flex items-center space-x-2 p-2 rounded-lg transition-all ${
+                state.currentView === 'vault' && state.selectedCategory === 'Chrome' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+              }`}
+              onClick={() => {
+                checkUnsavedAndExecute(() => {
+                  dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+                  dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'Chrome' });
+                  dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                  dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+                });
+              }}
+            >
+              <Download className="w-4 h-4" />
+              <span className="text-sm font-semibold">Chrome 凭证</span>
+            </button>
+            <button
+              onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'imports' }))}
+              className="p-2 rounded-lg hover:bg-surface2 text-text2"
+              title="从 CSV 导入"
+            >
+              <Upload className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* 基础设施 */}
+        <div className="p-2 border-b border-surface2">
           <button 
-            className={`flex-1 flex items-center space-x-2 p-3 rounded-lg transition-all ${
-              state.currentView === 'vault' && state.selectedCategory === 'Chrome' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            className={`flex items-center space-x-2 p-2 rounded-lg w-full transition-all ${
+              state.currentView === 'infrastructure' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
             }`}
             onClick={() => {
               checkUnsavedAndExecute(() => {
-                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
-                dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'Chrome' });
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'infrastructure' });
                 dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
                 dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
               });
             }}
           >
-            <Download className="w-4 h-4" />
-            <span className="text-sm font-semibold">Chrome 凭证</span>
+            <Server className="w-4 h-4" />
+            <span className="text-sm font-semibold">基础设施</span>
           </button>
-          <button
-            onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'imports' }))}
-            className="p-3 rounded-lg hover:bg-surface2 text-text2"
-            title="从 CSV 导入"
+        </div>
+
+        {/* API Keys */}
+        <div className="p-2 border-b border-surface2">
+          <button 
+            className={`flex items-center space-x-2 p-2 rounded-lg w-full transition-all ${
+              state.currentView === 'vault' && state.selectedCategory === 'API' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            }`}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
+                dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'API' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
           >
-            <Upload className="w-4 h-4" />
+            <Key className="w-4 h-4" />
+            <span className="text-sm font-semibold">API Keys 仓库</span>
+          </button>
+        </div>
+
+        {/* 域名管理 */}
+        <div className="p-2 border-b border-surface2">
+          <button 
+            className={`flex items-center space-x-2 p-2 rounded-lg w-full transition-all ${
+              state.currentView === 'domains' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            }`}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'domains' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
+          >
+            <Globe className="w-4 h-4" />
+            <span className="text-sm font-semibold">域名管理</span>
+          </button>
+        </div>
+
+        {/* SSL证书 */}
+        <div className="p-2 border-b border-surface2">
+          <button 
+            className={`flex items-center space-x-2 p-2 rounded-lg w-full transition-all ${
+              state.currentView === 'certificates' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            }`}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'certificates' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span className="text-sm font-semibold">SSL证书</span>
+          </button>
+        </div>
+
+        {/* 安全中心 */}
+        <div className="p-2 border-b border-surface2">
+          <button 
+            className={`flex items-center justify-between p-2 rounded-lg w-full transition-all ${
+              state.currentView === 'security' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
+            }`}
+            onClick={() => {
+              checkUnsavedAndExecute(() => {
+                dispatch({ type: 'SET_CURRENT_VIEW', payload: 'security' });
+                dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
+                dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
+              });
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <Shield className="w-4 h-4" />
+              <span className="text-sm font-semibold">安全中心</span>
+            </div>
+            {alertCount > 0 && (
+              <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+                <AlertTriangle className="w-3 h-3" />
+                {alertCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      {/* 模块 3: 基础设施资产 */}
-      <div className="p-2 border-b border-surface2">
-        <button 
-          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
-            state.currentView === 'infrastructure' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
-          }`}
-          onClick={() => {
-            checkUnsavedAndExecute(() => {
-              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'infrastructure' });
-              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-            });
-          }}
-        >
-          <Server className="w-4 h-4" />
-          <span className="text-sm font-semibold">基础设施</span>
-        </button>
-      </div>
-
-      {/* 模块 4: API Keys */}
-      <div className="p-2">
-        <button 
-          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
-            state.currentView === 'vault' && state.selectedCategory === 'API' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
-          }`}
-          onClick={() => {
-            checkUnsavedAndExecute(() => {
-              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'vault' });
-              dispatch({ type: 'SET_SELECTED_CATEGORY', payload: 'API' });
-              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-            });
-          }}
-        >
-          <Key className="w-4 h-4" />
-          <span className="text-sm font-semibold">API Keys 仓库</span>
-        </button>
-      </div>
-
-      {/* 域名管理 */}
-      <div className="p-2">
-        <button 
-          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
-            state.currentView === 'domains' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
-          }`}
-          onClick={() => {
-            checkUnsavedAndExecute(() => {
-              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'domains' });
-              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-            });
-          }}
-        >
-          <Globe className="w-4 h-4" />
-          <span className="text-sm font-semibold">域名管理</span>
-        </button>
-      </div>
-
-      {/* SSL证书 */}
-      <div className="p-2">
-        <button 
-          className={`flex items-center space-x-2 p-3 rounded-lg w-full transition-all ${
-            state.currentView === 'certificates' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
-          }`}
-          onClick={() => {
-            checkUnsavedAndExecute(() => {
-              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'certificates' });
-              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-            });
-          }}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span className="text-sm font-semibold">SSL证书</span>
-        </button>
-      </div>
-
-      {/* 安全中心 */}
-      <div className="p-2">
-        <button 
-          className={`flex items-center justify-between p-3 rounded-lg w-full transition-all ${
-            state.currentView === 'security' ? 'bg-accent/10 text-accent' : 'hover:bg-surface2'
-          }`}
-          onClick={() => {
-            checkUnsavedAndExecute(() => {
-              dispatch({ type: 'SET_CURRENT_VIEW', payload: 'security' });
-              dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-              dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
-            });
-          }}
-        >
-          <div className="flex items-center space-x-2">
-            <Shield className="w-4 h-4" />
-            <span className="text-sm font-semibold">安全中心</span>
-          </div>
-          {alertCount > 0 && (
-            <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
-              <AlertTriangle className="w-3 h-3" />
-              {alertCount}
-            </span>
-          )}
-        </button>
-      </div>
-
       {/* 设置按钮 - 固定在底部 */}
-      <div className="mt-auto p-4 border-t border-surface2 bg-surface/50 flex-shrink-0">
+      <div className="p-3 border-t border-surface2 bg-surface/50 flex-shrink-0">
         <button 
           className={`flex items-center space-x-2 p-2 rounded w-full transition-colors ${
             state.currentView === 'settings' ? 'bg-surface2 text-accent' : 'hover:bg-surface2'

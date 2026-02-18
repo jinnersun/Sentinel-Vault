@@ -251,6 +251,19 @@ export const api = {
     return await invoke('get_expiring_domains', { days });
   },
 
+  // Server-Domain-Certificate Relations
+  getServerDomains: async (serverId: number): Promise<{ id: number; domain: string; expiry_date?: string }[]> => {
+    return await invoke('get_server_domains', { serverId });
+  },
+
+  getServerCertificates: async (serverId: number): Promise<{ id: number; cert_name: string; domains: string[]; expires_at: string }[]> => {
+    return await invoke('get_server_certificates', { serverId });
+  },
+
+  getCertificateServers: async (certificateId: number): Promise<{ id: number; title: string; ip?: string }[]> => {
+    return await invoke('get_certificate_servers', { certificateId });
+  },
+
   // Event listeners
   listenForClipboardEvents: (callback: () => void) => {
     return listen('clipboard-change', callback);

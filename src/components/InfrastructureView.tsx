@@ -1,7 +1,7 @@
 import { useApp } from '../contexts/AppContext';
-import { Server, Database, Plus, Copy, Eye, EyeOff, Trash2, Edit2, X } from 'lucide-react';
+import { Server, Database, Plus, Copy, Eye, EyeOff, Trash2, Edit2, X, Globe, Shield, AlertTriangle } from 'lucide-react';
 import { parseAssetNotes, type ServerAsset, type DatabaseAsset } from '../types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../lib/tauri-api';
 import InfrastructureModal from './InfrastructureModal';
 
@@ -26,6 +26,12 @@ function generateConnectionString(dbType: string, username: string, password: st
     .replace('{db}', database || '');
 }
 
+// 服务器关联资源缓存
+interface ServerRelations {
+  domains: { id: number; domain: string; expiry_date?: string }[];
+  certificates: { id: number; cert_name: string; domains: string[]; expires_at: string }[];
+}
+
 export default function InfrastructureView() {
   const { state, dispatch } = useApp();
   const [showSecrets, setShowSecrets] = useState<Set<number>>(new Set());
@@ -34,6 +40,8 @@ export default function InfrastructureView() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
   const [detailItem, setDetailItem] = useState<typeof infrastructureItems[0] | null>(null);
+  const [serverRelations, setServerRelations] = useState<Map<number, ServerRelations>>(new Map());
+  const [loadingRelations, setLoadingRelations] = useState<Set<number>>(new Set());
 
   // 过滤出基础设施资产（Server 和 Database 类别）
   const infrastructureItems = state.vaultItems.filter(
@@ -48,6 +56,41 @@ export default function InfrastructureView() {
     : activeTab === 'server' 
       ? servers 
       : databases;
+
+  // 加载服务器关联资源
+  const loadServerRelations = async (serverId: number) => {
+    if (serverRelations.has(serverId) || loadingRelations.has(serverId)) return;
+    
+    setLoadingRelations(prev => new Set(prev).add(serverId));
+    try {
+      const [domains, certificates] = await Promise.all([
+        api.getServerDomains(serverId),
+        api.getServerCertificates(serverId),
+      ]);
+      
+      setServerRelations(prev => {
+        const next = new Map(prev);
+        next.set(serverId, { domains, certificates });
+        return next;
+      });
+    } catch (error) {
+      console.error('Failed to load server relations:', error);
+    } finally {
+      setLoadingRelations(prev => {
+        const next = new Set(prev);
+        next.delete(serverId);
+        return next;
+      });
+    }
+  };
+
+  // 检查证书状态
+  const getCertStatus = (expiresAt: string) => {
+    const daysUntilExpiry = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= 7) return 'warning';
+    return 'good';
+  };
 
   const toggleSecret = (id: number) => {
     setShowSecrets(prev => {
@@ -104,6 +147,15 @@ export default function InfrastructureView() {
   const renderServerCard = (item: typeof infrastructureItems[0]) => {
     const parsed = parseAssetNotes(item.notes);
     const serverData = parsed.data as ServerAsset | null;
+    const relations = serverRelations.get(item.id!);
+    const isLoading = loadingRelations.has(item.id!);
+    
+    // 首次渲染时加载关联数据
+    useEffect(() => {
+      if (item.id && item.category === 'Server') {
+        loadServerRelations(item.id);
+      }
+    }, [item.id]);
     
     return (
       <div key={item.id} className="card p-4 hover:border-accent transition-colors">
@@ -205,6 +257,65 @@ export default function InfrastructureView() {
           {serverData?.description && (
             <p className="text-sm text-text2 mt-2">{serverData.description}</p>
           )}
+
+          {/* 关联资源区 */}
+          <div className="mt-3 pt-3 border-t border-surface2">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : relations ? (
+              <div className="space-y-2">
+                {/* 域名标签 */}
+                {relations.domains.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Globe className="w-4 h-4 text-text2 mt-0.5 flex-shrink-0" />
+                    <div className="flex flex-wrap gap-1">
+                      {relations.domains.map(domain => (
+                        <span
+                          key={domain.id}
+                          className="px-2 py-0.5 text-xs bg-surface2 rounded hover:bg-accent/20 cursor-pointer transition-colors"
+                          onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'domains' })}
+                        >
+                          {domain.domain}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 证书状态 */}
+                {relations.certificates.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Shield className="w-4 h-4 text-text2 mt-0.5 flex-shrink-0" />
+                    <div className="flex flex-wrap gap-1">
+                      {relations.certificates.map(cert => {
+                        const status = getCertStatus(cert.expires_at);
+                        return (
+                          <span
+                            key={cert.id}
+                            className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${
+                              status === 'expired' ? 'bg-red-500/20 text-red-400' :
+                              status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-green-500/20 text-green-400'
+                            }`}
+                            title={`保护域名: ${cert.domains.join(', ')}`}
+                          >
+                            {status !== 'good' && <AlertTriangle className="w-3 h-3" />}
+                            {cert.cert_name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {relations.domains.length === 0 && relations.certificates.length === 0 && (
+                  <p className="text-xs text-text2">暂无关联域名和证书</p>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     );

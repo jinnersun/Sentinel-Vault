@@ -27,6 +27,7 @@ use commands::{
     copy_certificate_to_clipboard, get_certificate_file_path,
     get_domains, create_domain, update_domain, delete_domain, link_domain_server, unlink_domain_server, get_expiring_domains,
     fetch_domain_info, sync_domain_info,
+    get_server_domains, get_server_certificates, get_certificate_servers,
 };
 
 fn main() {
@@ -86,6 +87,9 @@ fn main() {
             get_expiring_domains,
             fetch_domain_info,
             sync_domain_info,
+            get_server_domains,
+            get_server_certificates,
+            get_certificate_servers,
         ])
         .setup(|_app| {
             // Initialize database on startup

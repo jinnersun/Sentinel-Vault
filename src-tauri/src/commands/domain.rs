@@ -321,3 +321,123 @@ pub async fn get_expiring_domains(days: i32) -> Result<Vec<Domain>, String> {
     
     Ok(domains)
 }
+
+/// 域名信息（用于服务器关联展示）
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DomainInfo {
+    pub id: i64,
+    pub domain: String,
+    pub expiry_date: Option<String>,
+}
+
+/// 证书完整信息（用于服务器关联展示）
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CertificateDetail {
+    pub id: i64,
+    pub cert_name: String,
+    pub domains: Vec<String>,
+    pub expires_at: String,
+}
+
+/// 获取服务器的关联域名
+#[command]
+pub async fn get_server_domains(server_id: i64) -> Result<Vec<DomainInfo>, String> {
+    let pool = get_db_pool().await.map_err(|e| e.to_string())?;
+    
+    let rows = sqlx::query(
+        r#"
+        SELECT d.id, d.domain, d.expiry_date
+        FROM domains d
+        JOIN domain_server_relations dsr ON d.id = dsr.domain_id
+        WHERE dsr.server_id = ?
+        ORDER BY d.domain ASC
+        "#
+    )
+    .bind(server_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    let domains = rows.iter().map(|row| {
+        DomainInfo {
+            id: row.get("id"),
+            domain: row.get("domain"),
+            expiry_date: row.get("expiry_date"),
+        }
+    }).collect();
+    
+    Ok(domains)
+}
+
+/// 获取服务器的关联证书（通过域名间接关联）
+#[command]
+pub async fn get_server_certificates(server_id: i64) -> Result<Vec<CertificateDetail>, String> {
+    let pool = get_db_pool().await.map_err(|e| e.to_string())?;
+    
+    let rows = sqlx::query(
+        r#"
+        SELECT DISTINCT c.id, c.cert_name, c.domains, c.expires_at
+        FROM ssl_certificates c
+        JOIN certificate_domain_relations cdr ON c.id = cdr.certificate_id
+        JOIN domain_server_relations dsr ON cdr.domain_id = dsr.domain_id
+        WHERE dsr.server_id = ?
+        ORDER BY c.expires_at ASC
+        "#
+    )
+    .bind(server_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    let certificates = rows.iter().map(|row| {
+        let domains_json: String = row.get("domains");
+        let domains: Vec<String> = serde_json::from_str(&domains_json).unwrap_or_default();
+        
+        CertificateDetail {
+            id: row.get("id"),
+            cert_name: row.get("cert_name"),
+            domains,
+            expires_at: row.get("expires_at"),
+        }
+    }).collect();
+    
+    Ok(certificates)
+}
+
+/// 获取证书的部署服务器列表（通过域名间接关联）
+#[command]
+pub async fn get_certificate_servers(certificate_id: i64) -> Result<Vec<ServerInfo>, String> {
+    let pool = get_db_pool().await.map_err(|e| e.to_string())?;
+    
+    let rows = sqlx::query(
+        r#"
+        SELECT DISTINCT v.id, v.title, v.notes
+        FROM vault v
+        JOIN domain_server_relations dsr ON v.id = dsr.server_id
+        JOIN certificate_domain_relations cdr ON dsr.domain_id = cdr.domain_id
+        WHERE cdr.certificate_id = ? AND v.is_archived = 0
+        ORDER BY v.title ASC
+        "#
+    )
+    .bind(certificate_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    let mut servers = Vec::new();
+    
+    for row in rows {
+        let notes_json: Option<String> = row.get("notes");
+        let ip = notes_json.as_ref()
+            .and_then(|n| serde_json::from_str::<serde_json::Value>(n).ok())
+            .and_then(|v| v.get("ip").and_then(|ip| ip.as_str().map(|s| s.to_string())));
+        
+        servers.push(ServerInfo {
+            id: row.get("id"),
+            title: row.get("title"),
+            ip,
+        });
+    }
+    
+    Ok(servers)
+}
