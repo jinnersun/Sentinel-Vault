@@ -81,7 +81,9 @@ pub async fn get_vault_items_by_project(project_id: Option<i64>) -> Result<Vec<V
 
     let rows = sqlx::query(
         r#"
-        SELECT v.id, v.title, v.secret_encrypted, v.url, v.notes, v.category, v.project_id, v.color, v.favicon_url, v.is_archived
+        SELECT v.id, v.title, v.secret_encrypted, v.url, v.notes, v.category, v.project_id, v.color, v.favicon_url, v.is_archived,
+               v.last_rotated_at, v.enable_rotation_reminder, v.rotation_reminder_days,
+               v.api_expires_at, v.enable_expiry_alert, v.expiry_alert_days
         FROM vault v
         JOIN credential_project_relations r ON v.id = r.credential_id
         WHERE r.project_id = ? AND v.is_archived = 0
