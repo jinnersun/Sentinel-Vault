@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Plus, Search, Trash2, Copy, FileText, Key, Link2, CheckCircle, X } from 'lucide-react';
+import { Shield, Plus, Search, Trash2, Copy, FileText, Key, Link2, CheckCircle, X, Server } from 'lucide-react';
 import type { SSLCertificate } from '../types';
 import api from '../lib/tauri-api';
 
@@ -426,6 +426,26 @@ interface DetailModalProps {
 }
 
 const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClose, onCopy, copying }) => {
+  const [servers, setServers] = useState<{ id: number; title: string; ip?: string }[]>([]);
+  const [loadingServers, setLoadingServers] = useState(false);
+
+  // 加载部署服务器列表
+  useEffect(() => {
+    const loadServers = async () => {
+      if (!certificate.id) return;
+      try {
+        setLoadingServers(true);
+        const data = await api.getCertificateServers(certificate.id);
+        setServers(data);
+      } catch (error) {
+        console.error('Failed to load certificate servers:', error);
+      } finally {
+        setLoadingServers(false);
+      }
+    };
+    loadServers();
+  }, [certificate.id]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto">
@@ -465,6 +485,32 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
               <p className="text-sm mt-1">{certificate.notes}</p>
             </div>
           )}
+
+          {/* 部署服务器列表 */}
+          <div>
+            <span className="text-gray-400 text-sm">部署服务器:</span>
+            {loadingServers ? (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                <span className="text-sm text-gray-500">加载中...</span>
+              </div>
+            ) : servers.length === 0 ? (
+              <p className="text-sm text-gray-500 mt-1">暂无部署服务器</p>
+            ) : (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {servers.map(server => (
+                  <span
+                    key={server.id}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm"
+                    title={server.ip || ''}
+                  >
+                    <Server className="w-4 h-4" />
+                    {server.title}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="pt-4 border-t">
             <h4 className="text-sm font-medium mb-3">操作</h4>
