@@ -56,8 +56,6 @@ export interface ServerAsset {
   description?: string;
   // 扩展字段
   ssh_key?: string;           // SSH 私钥（用于密钥登录）
-  ssl_cert?: string;          // SSL 证书内容
-  ssl_key?: string;           // SSL 私钥内容
   region?: string;            // 服务器区域/机房
   provider?: string;          // 云服务商（阿里云/AWS/腾讯云等）
   tags?: string[];            // 标签数组

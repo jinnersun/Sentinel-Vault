@@ -757,16 +757,6 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
             {serverData?.ssh_key && renderSecretField('SSH 私钥', serverData.ssh_key, 'ssh_key', 4)}
           </div>
 
-          {/* SSL 证书区域 */}
-          {(serverData?.ssl_cert || serverData?.ssl_key) && (
-            <div className="border-t border-surface2 pt-4 mt-4">
-              <h3 className="text-sm font-medium mb-4">SSL 证书</h3>
-              
-              {serverData.ssl_cert && renderSecretField('证书内容', serverData.ssl_cert, 'ssl_cert', 4)}
-              {serverData.ssl_key && renderSecretField('私钥内容', serverData.ssl_key, 'ssl_key', 4)}
-            </div>
-          )}
-
           {/* 描述 */}
           {serverData?.description && (
             <div className="border-t border-surface2 pt-4 mt-4">

@@ -56,8 +56,6 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
     project_id: null as number | null,
     // 扩展字段
     ssh_key: '',
-    ssl_cert: '',
-    ssl_key: '',
     region: '',
     provider: '',
     tags: '',
@@ -158,8 +156,6 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
             project_id: item.project_id || null,
             // 扩展字段
             ssh_key: notes.ssh_key || '',
-            ssl_cert: notes.ssl_cert || '',
-            ssl_key: notes.ssl_key || '',
             region: notes.region || '',
             provider: notes.provider || '',
             tags: notes.tags?.join(', ') || '',
@@ -213,8 +209,6 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
         description: '',
         project_id: null,
         ssh_key: '',
-        ssl_cert: '',
-        ssl_key: '',
         region: '',
         provider: '',
         tags: '',
@@ -267,8 +261,6 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
           description: serverForm.description,
           // 扩展字段
           ssh_key: serverForm.ssh_key,
-          ssl_cert: serverForm.ssl_cert,
-          ssl_key: serverForm.ssl_key,
           region: serverForm.region,
           provider: serverForm.provider,
           tags: serverForm.tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -565,29 +557,6 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                     className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none font-mono text-xs"
                     placeholder="-----BEGIN OPENSSH PRIVATE KEY-----..."
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text mb-2">SSL 证书</label>
-                    <textarea
-                      value={serverForm.ssl_cert}
-                      onChange={(e) => setServerForm(prev => ({ ...prev, ssl_cert: e.target.value }))}
-                      rows={3}
-                      className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none font-mono text-xs"
-                      placeholder="-----BEGIN CERTIFICATE-----..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text mb-2">SSL 私钥</label>
-                    <textarea
-                      value={serverForm.ssl_key}
-                      onChange={(e) => setServerForm(prev => ({ ...prev, ssl_key: e.target.value }))}
-                      rows={3}
-                      className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none font-mono text-xs"
-                      placeholder="-----BEGIN PRIVATE KEY-----..."
-                    />
-                  </div>
                 </div>
 
                 {/* 服务器租期设置 */}
