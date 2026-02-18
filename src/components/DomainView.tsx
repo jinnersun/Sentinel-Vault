@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Search, Server, Shield, Trash2, Edit2, RefreshCw, CheckCircle, Link2, X } from 'lucide-react';
-import type { Domain } from '../types';
+import { Globe, Plus, Search, Server, Shield, Trash2, Edit2, RefreshCw, CheckCircle, Link2, X, Info } from 'lucide-react';
+import type { Domain, DomainInfoResult } from '../types';
 import api from '../lib/tauri-api';
 
 interface DomainViewProps {
@@ -16,6 +16,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
   const [linkingDomain, setLinkingDomain] = useState<Domain | null>(null);
   const [servers, setServers] = useState<{ id: number; title: string; ip?: string }[]>([]);
   const [loadingServers, setLoadingServers] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ domain: string; result: DomainInfoResult } | null>(null);
 
   // 加载域名列表
   const loadDomains = async () => {
@@ -88,13 +89,15 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
     if (!domain.id) return;
     try {
       setSyncingDomain(domain.id);
-      await api.syncDomainInfo(domain.id, domain.domain);
+      const result = await api.syncDomainInfo(domain.id, domain.domain);
       setSyncedDomain(domain.id);
       await loadDomains();
+      // 显示同步结果弹窗
+      setSyncResult({ domain: domain.domain, result });
       setTimeout(() => setSyncedDomain(null), 2000);
     } catch (error) {
       console.error('Failed to sync domain:', error);
-      alert('同步域名信息失败，请稍后重试');
+      alert('同步域名信息失败: ' + (error as Error).message);
     } finally {
       setSyncingDomain(null);
     }
@@ -405,6 +408,124 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                 className="w-full py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 完成
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Result Modal */}
+      {syncResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">同步结果 - {syncResult.domain}</h3>
+              </div>
+              <button
+                onClick={() => setSyncResult(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">数据来源:</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${
+                    syncResult.result.source === 'rdap' 
+                      ? 'bg-green-100 text-green-600' 
+                      : 'bg-yellow-100 text-yellow-600'
+                  }`}>
+                    {syncResult.result.source === 'rdap' ? 'RDAP' : '备用方案'}
+                  </span>
+                </div>
+                
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">获取到的信息:</h4>
+                  
+                  {syncResult.result.registrar ? (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">注册商:</span>
+                      <span className="font-medium">{syncResult.result.registrar}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">注册商:</span>
+                      <span className="text-gray-400 italic">未获取到</span>
+                    </div>
+                  )}
+                  
+                  {syncResult.result.registration_date ? (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">注册时间:</span>
+                      <span className="font-medium">{syncResult.result.registration_date}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">注册时间:</span>
+                      <span className="text-gray-400 italic">未获取到</span>
+                    </div>
+                  )}
+                  
+                  {syncResult.result.expiry_date ? (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">到期时间:</span>
+                      <span className={`font-medium ${
+                        new Date(syncResult.result.expiry_date) < new Date() 
+                          ? 'text-red-600' 
+                          : new Date(syncResult.result.expiry_date) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                      }`}>
+                        {syncResult.result.expiry_date}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-sm mb-2">
+                      <span className="text-gray-500 w-20 flex-shrink-0">到期时间:</span>
+                      <span className="text-gray-400 italic">未获取到</span>
+                    </div>
+                  )}
+                </div>
+                
+                {syncResult.result.name_servers.length > 0 && (
+                  <div className="border-t pt-3">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">DNS服务器:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {syncResult.result.name_servers.map((ns, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                          {ns}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {!syncResult.result.registrar && !syncResult.result.expiry_date && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-yellow-700">
+                      ⚠️ 未能获取到有效的域名信息。可能原因：
+                    </p>
+                    <ul className="text-xs text-yellow-600 mt-1 list-disc list-inside">
+                      <li>域名后缀不支持RDAP查询</li>
+                      <li>RDAP服务器暂时不可用</li>
+                      <li>域名信息被隐私保护</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => setSyncResult(null)}
+                className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                确定
               </button>
             </div>
           </div>
