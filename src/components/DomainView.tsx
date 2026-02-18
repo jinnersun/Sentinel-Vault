@@ -247,21 +247,54 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                         <p className="text-sm text-gray-500 mb-3">{domain.notes}</p>
                       )}
 
-                      {/* 关联资源 */}
-                      <div className="flex items-center gap-4 text-sm">
-                        {domain.servers && domain.servers.length > 0 && (
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <Server className="w-4 h-4" />
-                            <span>{domain.servers.length} 个服务器</span>
+                      {/* 关联资源 - 服务器标签 */}
+                      {domain.servers && domain.servers.length > 0 && (
+                        <div className="flex items-start gap-2 text-sm mt-2">
+                          <Server className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex flex-wrap gap-1">
+                            {domain.servers.map(server => (
+                              <span
+                                key={server.id}
+                                className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 cursor-pointer transition-colors"
+                                title={server.ip || ''}
+                              >
+                                {server.title}
+                              </span>
+                            ))}
                           </div>
-                        )}
-                        {domain.certificates && domain.certificates.length > 0 && (
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <Shield className="w-4 h-4" />
-                            <span>{domain.certificates.length} 个证书</span>
+                        </div>
+                      )}
+
+                      {/* 关联资源 - 证书标签 */}
+                      {domain.certificates && domain.certificates.length > 0 && (
+                        <div className="flex items-start gap-2 text-sm mt-2">
+                          <Shield className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex flex-wrap gap-1">
+                            {domain.certificates.map(cert => {
+                              const daysUntilExpiry = Math.ceil((new Date(cert.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                              const isExpired = daysUntilExpiry < 0;
+                              const isWarning = daysUntilExpiry <= 7;
+                              return (
+                                <span
+                                  key={cert.id}
+                                  className={`px-2 py-0.5 rounded text-xs ${
+                                    isExpired
+                                      ? 'bg-red-50 text-red-600'
+                                      : isWarning
+                                      ? 'bg-yellow-50 text-yellow-600'
+                                      : 'bg-green-50 text-green-600'
+                                  }`}
+                                  title={`到期时间: ${cert.expires_at}`}
+                                >
+                                  {cert.cert_name}
+                                  {isExpired && ' (已过期)'}
+                                  {isWarning && ` (${daysUntilExpiry}天)`}
+                                </span>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
