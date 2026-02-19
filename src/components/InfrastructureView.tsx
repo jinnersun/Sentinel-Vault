@@ -48,6 +48,16 @@ export default function InfrastructureView() {
     item => item.category === 'Server' || item.category === 'Database'
   );
 
+  // 加载所有服务器的关联资源（在组件顶层统一加载）
+  useEffect(() => {
+    const serverItems = infrastructureItems.filter(item => item.category === 'Server');
+    serverItems.forEach(item => {
+      if (item.id && !serverRelations.has(item.id) && !loadingRelations.has(item.id)) {
+        loadServerRelations(item.id);
+      }
+    });
+  }, [infrastructureItems.map(item => item.id).join(',')]);
+
   const servers = infrastructureItems.filter(item => item.category === 'Server');
   const databases = infrastructureItems.filter(item => item.category === 'Database');
 
@@ -175,13 +185,6 @@ export default function InfrastructureView() {
     const serverData = parsed.data as ServerAsset | null;
     const relations = serverRelations.get(item.id!);
     const isLoading = loadingRelations.has(item.id!);
-    
-    // 首次渲染时加载关联数据
-    useEffect(() => {
-      if (item.id && item.category === 'Server') {
-        loadServerRelations(item.id);
-      }
-    }, [item.id]);
     
     return (
       <div key={item.id} className="card p-4 hover:border-accent transition-colors">
