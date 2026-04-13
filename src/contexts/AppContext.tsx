@@ -43,7 +43,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'SET_VAULT_ITEMS':
-      return { ...state, vaultItems: action.payload };
+      // 同步更新 selectedItem，确保详情面板显示最新数据
+      const updatedSelectedItem = state.selectedItem
+        ? action.payload.find(item => item.id === state.selectedItem!.id) || state.selectedItem
+        : null;
+      return { ...state, vaultItems: action.payload, selectedItem: updatedSelectedItem };
     case 'SET_PROJECTS':
       return { ...state, projects: action.payload };
     case 'SET_SELECTED_PROJECT':
@@ -161,8 +165,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const checkMasterPassword = async () => {
       try {
         const isSet = await api.hasMasterPassword();
-        // masterPasswordVerified should be true if password already set
-        dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: !!isSet });
+        // 修复：masterPasswordVerified 表示用户是否已通过验证
+        // 如果密码已设置，需要用户输入验证，所以设为 false
+        // 如果密码未设置，不需要验证，所以设为 true（直接进入设置流程）
+        dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: !isSet });
       } catch (error) {
         console.error('Failed to check master password:', error);
         // Assume password is needed if check fails
