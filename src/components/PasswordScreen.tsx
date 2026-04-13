@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import api from '../lib/tauri-api';
+import { useTranslation } from 'react-i18next';
 
 export default function PasswordScreen() {
   const [password, setPassword] = useState('');
@@ -10,6 +11,7 @@ export default function PasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const { dispatch } = useApp();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const checkPasswordStatus = async () => {
@@ -35,11 +37,11 @@ export default function PasswordScreen() {
     try {
       if (isNewPassword) {
         if (password !== confirmPassword) {
-          setError('密码不匹配');
+          setError(t('password.error.mismatch'));
           return;
         }
         if (password.length < 8) {
-          setError('密码至少需要8个字符');
+          setError(t('password.error.tooShort'));
           return;
         }
         await api.setMasterPassword(password);
@@ -49,11 +51,11 @@ export default function PasswordScreen() {
         if (isValid) {
           dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: true });
         } else {
-          setError('密码错误');
+          setError(t('password.error.wrong'));
         }
       }
     } catch (error) {
-      setError('操作失败，请重试');
+      setError(t('password.error.failed'));
       console.error('Password verification error:', error);
     } finally {
       setIsLoading(false);
@@ -66,7 +68,7 @@ export default function PasswordScreen() {
         <div className="w-full max-w-md">
           <div className="card p-8">
             <div className="text-center">
-              <p className="text-text2">初始化中...</p>
+              <p className="text-text2">{t('app.initializing')}</p>
             </div>
           </div>
         </div>
@@ -80,20 +82,20 @@ export default function PasswordScreen() {
         <div className="card p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-accent mb-2">DevVault</h1>
-            <p className="text-text2">开发者凭证管理器</p>
+            <p className="text-text2">{t('password.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-text mb-2">
-                {isNewPassword ? '设置主密码' : '输入主密码'}
+                {isNewPassword ? t('password.setTitle') : t('password.title')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input"
-                placeholder="请输入密码"
+                placeholder={t('password.placeholder')}
                 autoFocus
                 required
               />
@@ -102,14 +104,14 @@ export default function PasswordScreen() {
             {isNewPassword && (
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  确认密码
+                  {t('password.confirmLabel')}
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input"
-                  placeholder="请再次输入密码"
+                  placeholder={t('password.confirmPlaceholder')}
                   required
                 />
               </div>
@@ -124,7 +126,7 @@ export default function PasswordScreen() {
               disabled={isLoading}
               className="btn w-full disabled:opacity-50"
             >
-              {isLoading ? '验证中...' : isNewPassword ? '设置密码' : '解锁'}
+              {isLoading ? t('password.verifying') : isNewPassword ? t('password.setPassword') : t('password.unlock')}
             </button>
 
             {!isNewPassword && (
@@ -134,7 +136,7 @@ export default function PasswordScreen() {
                   onClick={() => setIsNewPassword(true)}
                   className="text-accent hover:text-accent2 text-sm"
                 >
-                  首次使用？设置主密码
+                  {t('password.firstTime')}
                 </button>
               </div>
             )}

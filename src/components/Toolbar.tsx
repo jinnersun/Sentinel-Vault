@@ -1,9 +1,11 @@
 
 import { useApp } from '../contexts/AppContext';
 import { Eye, EyeOff, Plus, Key, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
   const { state, dispatch } = useApp();
+  const { t } = useTranslation();
 
   const handleNewItem = () => {
     onNewItem();
@@ -15,17 +17,17 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
       <button
         onClick={handleNewItem}
         className="btn btn-sm flex items-center space-x-2"
-        title="新建条目 (Ctrl+N)"
+        title={t('toolbar.newItem')}
       >
         <Plus className="w-4 h-4" />
-        <span>新建</span>
+        <span>{t('toolbar.new')}</span>
       </button>
 
       {/* Lock Button */}
       <button
         onClick={() => dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: false })}
         className="p-2 rounded-lg transition-colors hover:bg-surface2 text-text2"
-        title="锁定 (Ctrl+L)"
+        title={t('toolbar.lock')}
       >
         <Lock className="w-4 h-4" />
       </button>
@@ -38,7 +40,7 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
             ? 'bg-warning text-background' 
             : 'hover:bg-surface2 text-text2'
         }`}
-        title={state.stealthMode ? '退出隐身模式' : '进入隐身模式'}
+        title={state.stealthMode ? t('toolbar.stealthModeOn') : t('toolbar.stealthModeOff')}
       >
         {state.stealthMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
       </button>
@@ -47,7 +49,7 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
       {state.vaultItems.length > 0 && (
         <div className="flex items-center space-x-2 text-sm text-text2">
           <Key className="w-4 h-4" />
-          <span>{state.vaultItems.length} 个凭证</span>
+          <span>{t('toolbar.credentialsCount', { count: state.vaultItems.length })}</span>
         </div>
       )}
     </div>

@@ -1,0 +1,228 @@
+{
+  "app": {
+    "name": "DevVault",
+    "title": "Developer Credentials & Asset Manager",
+    "loading": "Loading...",
+    "initializing": "Initializing..."
+  },
+  "nav": {
+    "vault": "Vault",
+    "projects": "Projects",
+    "infrastructure": "Infrastructure",
+    "security": "Security Center",
+    "domains": "Domains",
+    "certificates": "SSL Certificates",
+    "apikeys": "API Keys",
+    "imports": "Imports",
+    "settings": "Settings"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "back": "Back",
+    "close": "Close",
+    "copy": "Copy",
+    "new": "New",
+    "add": "Add",
+    "remove": "Remove",
+    "refresh": "Refresh"
+  },
+  "toolbar": {
+    "newItem": "New Item (Ctrl+N)",
+    "new": "New",
+    "lock": "Lock (Ctrl+L)",
+    "stealthModeOn": "Exit Stealth Mode",
+    "stealthModeOff": "Enter Stealth Mode",
+    "credentialsCount": "{{count}} credentials"
+  },
+  "password": {
+    "title": "Enter Master Password",
+    "setTitle": "Set Master Password",
+    "subtitle": "Developer Credentials Manager",
+    "placeholder": "Enter password",
+    "confirmPlaceholder": "Enter password again",
+    "confirmLabel": "Confirm Password",
+    "unlock": "Unlock",
+    "setPassword": "Set Password",
+    "verifying": "Verifying...",
+    "firstTime": "First time? Set master password",
+    "error": {
+      "mismatch": "Passwords do not match",
+      "tooShort": "Password must be at least 8 characters",
+      "wrong": "Wrong password",
+      "failed": "Operation failed, please try again"
+    }
+  },
+  "vault": {
+    "title": "Vault",
+    "empty": "No credentials yet",
+    "addNew": "Click the button above to add new credentials",
+    "selectItem": "Select an item to view details",
+    "deleteConfirm": "Are you sure you want to delete \"{{title}}\"?",
+    "deleteSuccess": "Successfully deleted credential \"{{title}}\"",
+    "deleteFailed": "Failed to delete \"{{title}}\", please try again\n{{error}}"
+  },
+  "search": {
+    "placeholder": "Search title, notes or URL... (Ctrl+K focus, Enter search)",
+    "clear": "Clear"
+  },
+  "sidebar": {
+    "newProject": "New Project",
+    "enterProjectName": "Please enter project name",
+    "createFailed": "Failed to create project: {{error}}",
+    "updateFailed": "Failed to update project",
+    "unsavedChanges": "You have unsaved changes",
+    "saveFailed": "Save failed, cannot navigate",
+    "deleteConfirm": "Are you sure you want to delete this project?"
+  },
+  "settings": {
+    "title": "System Settings",
+    "security": {
+      "title": "Security Settings",
+      "changePassword": "Change Master Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "autoLock": "Auto Lock",
+      "autoLockDesc": "After idle",
+      "autoLockSuffix": "auto lock",
+      "clipboardClear": "Clipboard Security",
+      "clipboardClearDesc": "After copying password",
+      "clipboardClearSuffix": "auto clear clipboard",
+      "errors": {
+        "currentRequired": "Please enter current password",
+        "mismatch": "New passwords do not match",
+        "tooShort": "New password must be at least 6 characters",
+        "wrong": "Current password is wrong",
+        "success": "Master password changed successfully",
+        "failed": "Failed to change master password"
+      }
+    },
+    "data": {
+      "title": "Data Management",
+      "backup": "Backup Database",
+      "backupDesc": "Backup current database to specified location",
+      "backupSuccess": "Database backup successful",
+      "backupFailed": "Database backup failed",
+      "switch": "Switch Database",
+      "switchDesc": "Select another database file (requires restart)",
+      "switchSuccess": "Database switched successfully, please restart the app",
+      "switchFailed": "Failed to switch database"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "clearData": "Clear All Data",
+      "clearDataDesc": "Delete all credentials, projects and API Keys. This action cannot be undone",
+      "confirm1": "Warning: This will delete all data and cannot be recovered!\n\nAre you sure you want to continue?",
+      "confirm2": "Confirm again: Do you really want to delete all credentials, projects and API Keys?",
+      "clearSuccess": "All data has been cleared",
+      "clearFailed": "Failed to clear data: {{error}}"
+    },
+    "language": {
+      "title": "Language Settings",
+      "select": "Select Language"
+    }
+  },
+  "project": {
+    "dashboard": {
+      "status": {
+        "active": "Active",
+        "maintenance": "Maintenance",
+        "inactive": "Inactive"
+      },
+      "errors": {
+        "loadReadme": "Unable to load README file",
+        "saveFailed": "Save failed"
+      }
+    },
+    "relations": {
+      "title": "Project Resource Explorer",
+      "removeConfirm": "Are you sure you want to remove this association?",
+      "copySSH": "Copy SSH Command",
+      "user": "User",
+      "password": "Password",
+      "database": "Database",
+      "openAdmin": "Open Admin Panel"
+    }
+  },
+  "securityCenter": {
+    "title": "Security Center",
+    "subtitle": "Anomaly Aggregator - Monitor certificate, domain, server expiration alerts",
+    "back": "Back",
+    "alertSummary": "Found {{count}} security issues requiring attention",
+    "tabs": {
+      "topology": "Topology Alerts",
+      "overview": "Overview"
+    },
+    "empty": {
+      "title": "No abnormal impact chains",
+      "subtitle": "All certificates, domains, and servers are normal"
+    },
+    "impactChains": "Abnormal Impact Chains ({{count}})"
+  },
+  "domain": {
+    "status": {
+      "expired": "Expired",
+      "warning": "Expiring Soon",
+      "normal": "Normal",
+      "good": "Good"
+    },
+    "delete": {
+      "confirm": "Are you sure you want to delete this domain?",
+      "withRelations": "Domain \"{{domain}}\" is associated with {{relations}}.\n\nDeleting the domain will also remove these associations. Continue?",
+      "failed": "Failed to delete domain"
+    },
+    "loadFailed": "Failed to load domain list"
+  },
+  "certificate": {
+    "title": "SSL Certificate Management",
+    "subtitle": "Manage SSL certificates and associated domains",
+    "status": {
+      "expired": "Expired",
+      "warning": "Expiring Soon",
+      "normal": "Normal",
+      "good": "Good"
+    },
+    "copyFailed": "Copy failed",
+    "deleteConfirm": "Are you sure you want to delete this certificate?",
+    "deleteFailed": "Failed to delete certificate",
+    "loadFailed": "Failed to load certificate list"
+  },
+  "apikeys": {
+    "title": "API Keys",
+    "empty": "No API Keys yet",
+    "addNew": "Click the button above to add a new API Key",
+    "new": "New API Key",
+    "scope": "Scope",
+    "deleteConfirm": "Are you sure you want to delete this API Key?",
+    "deleteSuccess": "Successfully deleted API Key",
+    "deleteFailed": "Delete failed, please try again\n{{error}}"
+  },
+  "imports": {
+    "parseFailed": "Parse failed: {{error}}",
+    "conflictsPending": "There are still {{count}} conflict records pending. Please select \"Update\" or \"Skip\"",
+    "noSelection": "No records selected for import",
+    "success": "Import completed! Added: {{imported}}, Updated: {{updated}}, Skipped: {{skipped}}",
+    "failed": "Import failed: {{error}}",
+    "completed": "Import Completed"
+  },
+  "itemModal": {
+    "errors": {
+      "titleRequired": "Please enter title",
+      "secretRequired": "Please enter {{type}}",
+      "urlRequired": "Please enter website URL",
+      "updateFailed": "Update failed: {{error}}",
+      "createFailed": "Create failed: {{error}}"
+    },
+    "pasteConfirm": "Detected possible API Key in clipboard. Auto-fill?",
+    "chromeUsername": "Username"
+  }
+}
