@@ -187,6 +187,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedProject]);
 
+  // 自动锁定逻辑
+  useEffect(() => {
+    if (!state.masterPasswordVerified) return;
+
+    let autoLockMinutes = 30; // 默认30分钟
+    let lastActivityTime = Date.now();
+    let checkInterval: ReturnType<typeof setInterval> | null = null;
+
+    // 加载自动锁定设置
+    const loadAutoLockSetting = async () => {
+      try {
+        const setting = await api.getSetting('auto_lock_minutes');
+        if (setting) {
+          autoLockMinutes = parseInt(setting);
+        }
+      } catch (error) {
+        console.error('Failed to load auto lock setting:', error);
+      }
+    };
+
+    loadAutoLockSetting();
+
+    // 更新最后活动时间
+    const updateActivity = () => {
+      lastActivityTime = Date.now();
+    };
+
+    // 监听用户活动
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, updateActivity);
+    });
+
+    // 定时检查是否超时
+    const startChecking = () => {
+      if (checkInterval) clearInterval(checkInterval);
+      checkInterval = setInterval(() => {
+        if (autoLockMinutes <= 0) return; // 0表示从不锁定
+        
+        const inactiveTime = Date.now() - lastActivityTime;
+        const lockThreshold = autoLockMinutes * 60 * 1000;
+        
+        if (inactiveTime > lockThreshold) {
+          console.log(`自动锁定：闲置超过 ${autoLockMinutes} 分钟`);
+          dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: false });
+        }
+      }, 60000); // 每分钟检查一次
+    };
+
+    startChecking();
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, [state.masterPasswordVerified, dispatch]);
+
   return (
     <AppContext.Provider value={{ state, dispatch, refreshData, searchItems }}>
       {children}

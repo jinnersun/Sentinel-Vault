@@ -1,4 +1,5 @@
 import { generateEnvFormat, generateJsonFormat } from './utils';
+import api from './tauri-api';
 
 export interface CopyFormat {
   type: 'raw' | 'env' | 'json' | 'custom';
@@ -49,6 +50,8 @@ export class SmartCopyManager {
       await this.performCopy(textToCopy);
       this.addToHistory(textToCopy, format.type);
       this.showVisualFeedback();
+      // 启动剪贴板自动清除
+      this.scheduleClipboardClear();
     } catch (error) {
       console.error('Failed to copy text:', error);
       throw error;
@@ -137,6 +140,26 @@ export class SmartCopyManager {
 
   clearHistory(): void {
     this.copyHistory = [];
+  }
+
+  private async scheduleClipboardClear(): Promise<void> {
+    try {
+      const setting = await api.getSetting('clipboard_clear_seconds');
+      const clearSeconds = setting ? parseInt(setting) : 0;
+      
+      if (clearSeconds > 0) {
+        setTimeout(async () => {
+          try {
+            await navigator.clipboard.writeText('');
+            console.log(`剪贴板已自动清除（${clearSeconds}秒后）`);
+          } catch (error) {
+            console.error('自动清除剪贴板失败:', error);
+          }
+        }, clearSeconds * 1000);
+      }
+    } catch (error) {
+      console.error('获取剪贴板清除设置失败:', error);
+    }
   }
 }
 

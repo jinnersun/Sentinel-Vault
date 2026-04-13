@@ -16,6 +16,7 @@ import {
 
 export default function SettingsView() {
   const { dispatch, refreshData } = useApp();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [masterPassword, setMasterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,17 +40,28 @@ export default function SettingsView() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentPassword) {
+      alert('请输入当前密码');
+      return;
+    }
     if (masterPassword !== confirmPassword) {
-      alert('两次输入的密码不一致');
+      alert('两次输入的新密码不一致');
       return;
     }
     if (masterPassword.length < 6) {
-      alert('密码长度至少为 6 位');
+      alert('新密码长度至少为 6 位');
       return;
     }
     try {
+      // 验证当前密码
+      const isValid = await api.verifyMasterPassword(currentPassword);
+      if (!isValid) {
+        alert('当前密码错误');
+        return;
+      }
       await api.setMasterPassword(masterPassword);
       alert('主密码修改成功');
+      setCurrentPassword('');
       setMasterPassword('');
       setConfirmPassword('');
     } catch (error) {
@@ -156,6 +168,13 @@ export default function SettingsView() {
           <div>
             <h4 className="font-medium mb-3">修改主密码</h4>
             <form onSubmit={handleChangePassword} className="space-y-3">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="input w-full"
+                placeholder="当前密码"
+              />
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
