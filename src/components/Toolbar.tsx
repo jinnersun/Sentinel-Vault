@@ -1,6 +1,6 @@
 
 import { useApp } from '../contexts/AppContext';
-import { Eye, EyeOff, Plus, Key } from 'lucide-react';
+import { Eye, EyeOff, Plus, Key, Lock } from 'lucide-react';
 
 export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
   const { state, dispatch } = useApp();
@@ -19,6 +19,15 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
       >
         <Plus className="w-4 h-4" />
         <span>新建</span>
+      </button>
+
+      {/* Lock Button */}
+      <button
+        onClick={() => dispatch({ type: 'SET_MASTER_PASSWORD_VERIFIED', payload: false })}
+        className="p-2 rounded-lg transition-colors hover:bg-surface2 text-text2"
+        title="锁定 (Ctrl+L)"
+      >
+        <Lock className="w-4 h-4" />
       </button>
 
       {/* Stealth Mode Toggle */}
