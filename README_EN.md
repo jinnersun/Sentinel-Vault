@@ -2,6 +2,8 @@
 
 Developer Credentials & Asset Manager - One-stop management for API Keys, servers, databases, and project credentials
 
+> 🌍 [中文版](README.md) | English Version
+
 ## Features
 
 ### Core Features
@@ -153,6 +155,13 @@ devvault/
 - [ ] Auto-lock feature
 
 ## Recent Updates
+
+### v0.2.0 - Multi-language Internationalization Support
+- 🌐 **Complete Internationalization** - All UI text supports bilingual (Chinese/English)
+- 🔄 **Language Switching** - Settings page supports real-time language switching with auto-save preferences
+- 📝 **README Multi-language** - Cross-navigation links between Chinese and English versions
+- ✨ **100% Coverage** - All 19 components completed internationalization replacement
+- 🌍 **i18next Integration** - Using react-i18next + i18next-browser-languagedetector
 
 ### v2.2 - Fixes & Improvements
 - 🔧 **Fixed Password Verification** - Fixed app startup password verification logic error
