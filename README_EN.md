@@ -1,4 +1,4 @@
-# DevVault
+# Sentinel-Vault
 
 Developer Credentials & Asset Manager - One-stop management for API Keys, servers, databases, and project credentials
 
@@ -50,6 +50,12 @@ Developer Credentials & Asset Manager - One-stop management for API Keys, server
 ### Requirements
 - Node.js 18+
 - Rust 1.70+
+
+### Clone Repository
+```bash
+git clone https://github.com/jinnersun/Sentinel-Vault.git
+cd Sentinel-Vault
+```
 
 ### Install Dependencies
 ```bash

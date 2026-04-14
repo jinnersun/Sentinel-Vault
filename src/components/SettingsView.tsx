@@ -362,7 +362,7 @@ export default function SettingsView() {
 
       {/* 版本信息 */}
       <div className="mt-12 pt-6 border-t border-surface2 text-center text-sm text-text2">
-        <p>DevVault v0.2.0</p>
+        <p>Sentinel-Vault v0.2.0</p>
         <p className="mt-1">{t('settings.version.subtitle')}</p>
       </div>
       </div>

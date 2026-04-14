@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "DevVault",
+    "productName": "Sentinel-Vault",
     "version": "0.2.0"
   },
   "tauri": {
@@ -45,7 +45,7 @@
     },
     "bundle": {
       "active": true,
-      "identifier": "com.devvault.app",
+      "identifier": "com.sentinelvault.app",
       "icon": [
         "icons/32x32.png",
         "icons/icon.png",
@@ -64,7 +64,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "DevVault",
+        "title": "Sentinel-Vault",
         "width": 1200,
         "height": 800
       }

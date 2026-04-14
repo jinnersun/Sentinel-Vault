@@ -1,4 +1,4 @@
-# DevVault
+# Sentinel-Vault
 
 开发者凭证与资产管理器 - 一站式管理 API Keys、服务器、数据库和项目凭证
 
@@ -50,6 +50,12 @@
 ### 环境要求
 - Node.js 18+
 - Rust 1.70+
+
+### 克隆仓库
+```bash
+git clone https://github.com/jinnersun/Sentinel-Vault.git
+cd Sentinel-Vault
+```
 
 ### 安装依赖
 ```bash
