@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, Clock, RefreshCw, Key, Server, Database, Globe, AlertCircle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import type { SecurityOverview, SecurityAlert } from '../types';
 import api from '../lib/tauri-api';
+import { useTranslation } from 'react-i18next';
 
 interface SecurityCenterProps {
   onClose: () => void;
@@ -24,6 +25,7 @@ interface ImpactChain {
 }
 
 const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const [overview, setOverview] = useState<SecurityOverview | null>(null);
   const [, setAlerts] = useState<SecurityAlert[]>([]);
   const [impactChains, setImpactChains] = useState<ImpactChain[]>([]);
@@ -148,15 +150,15 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
               <Shield className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">安全中心</h1>
-              <p className="text-sm text-gray-500">异常聚合器 - 监控证书、域名、服务器到期提醒</p>
+              <h1 className="text-xl font-semibold text-gray-900">{t('securityCenter.title')}</h1>
+              <p className="text-sm text-gray-500">{t('securityCenter.subtitle')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            返回
+            {t('common.back')}
           </button>
         </div>
       </div>
@@ -167,7 +169,7 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
           <div className="flex items-center gap-2 text-red-700">
             <AlertCircle className="w-5 h-5" />
             <span className="font-medium">
-              发现 {getTotalAlerts()} 个安全问题需要关注
+              {t('securityCenter.alertSummary', { count: getTotalAlerts() })}
             </span>
           </div>
         </div>
@@ -177,8 +179,8 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
       <div className="bg-white border-b px-6">
         <div className="flex gap-1">
           {[
-            { id: 'topology', label: '拓扑告警', icon: AlertTriangle },
-            { id: 'overview', label: '概览', icon: Shield },
+            { id: 'topology', label: t('securityCenter.tabs.topology'), icon: AlertTriangle },
+            { id: 'overview', label: t('securityCenter.tabs.overview'), icon: Shield },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -204,17 +206,17 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
             {impactChains.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                <p>暂无异常影响链</p>
-                <p className="text-sm text-gray-400 mt-2">所有证书、域名、服务器状态正常</p>
+                <p>{t('securityCenter.empty.title')}</p>
+                <p className="text-sm text-gray-400 mt-2">{t('securityCenter.empty.subtitle')}</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-medium text-gray-900">
-                    异常影响链 ({impactChains.length} 个)
+                    {t('securityCenter.impactChains', { count: impactChains.length })}
                   </h2>
                   <p className="text-sm text-gray-500">
-                    点击展开查看完整影响范围
+                    {t('securityCenter.clickToExpand')}
                   </p>
                 </div>
                 
@@ -249,14 +251,14 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
                               chain.severity === 'warning' ? 'bg-yellow-100 text-yellow-600' :
                               'bg-green-100 text-green-600'
                             }`}>
-                              {chain.severity === 'overdue' ? '已过期' :
-                               chain.severity === 'warning' ? '即将到期' : '正常'}
+                              {chain.severity === 'overdue' ? t('securityCenter.status.expired') :
+                               chain.severity === 'warning' ? t('securityCenter.status.expiringSoon') : t('securityCenter.status.normal')}
                             </span>
                           </div>
                           <p className="text-sm mt-1">{chain.description}</p>
                           {chain.dueDate && (
                             <p className="text-xs mt-1 opacity-75">
-                              到期时间: {chain.dueDate}
+                              {t('securityCenter.dueDate')}: {chain.dueDate}
                             </p>
                           )}
                         </div>
@@ -266,7 +268,7 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
                     {/* 展开的影响范围 */}
                     {expandedChains.has(chain.id) && chain.impactedItems.length > 0 && (
                       <div className="border-t bg-gray-50 p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">影响范围:</h4>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">{t('securityCenter.impactScope')}</h4>
                         <div className="space-y-2">
                           {chain.impactedItems.map((item, idx) => (
                             <div
@@ -282,8 +284,8 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
                                   item.severity === 'warning' ? 'bg-yellow-100 text-yellow-600' :
                                   'bg-green-100 text-green-600'
                                 }`}>
-                                  {item.severity === 'overdue' ? '异常' :
-                                   item.severity === 'warning' ? '警告' : '正常'}
+                                  {item.severity === 'overdue' ? t('securityCenter.status.alert') :
+                                   item.severity === 'warning' ? t('securityCenter.status.warning') : t('securityCenter.status.normal')}
                                 </span>
                               )}
                             </div>
@@ -305,25 +307,25 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
             <div className="grid grid-cols-4 gap-4">
               <StatCard
                 icon={Key}
-                label="API Keys"
+                label={t('securityCenter.stats.apiKeys')}
                 value={overview.api_keys_count}
                 color="blue"
               />
               <StatCard
                 icon={Server}
-                label="服务器"
+                label={t('securityCenter.stats.servers')}
                 value={overview.servers_count}
                 color="green"
               />
               <StatCard
                 icon={Database}
-                label="数据库"
+                label={t('securityCenter.stats.databases')}
                 value={overview.databases_count}
                 color="purple"
               />
               <StatCard
                 icon={Globe}
-                label="Chrome凭证"
+                label={t('securityCenter.stats.chromeCredentials')}
                 value={overview.chrome_count}
                 color="orange"
               />
@@ -333,21 +335,21 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-blue-500" />
-                密码轮换状态
+                {t('securityCenter.rotationStatus')}
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 <AlertStat
-                  label="已过期"
+                  label={t('securityCenter.status.expired')}
                   value={overview.rotation_overdue}
                   color="red"
                 />
                 <AlertStat
-                  label="7天内到期"
+                  label={t('securityCenter.status.expiresIn7Days')}
                   value={overview.rotation_warning}
                   color="yellow"
                 />
                 <AlertStat
-                  label="30天内到期"
+                  label={t('securityCenter.status.expiresIn30Days')}
                   value={overview.rotation_normal}
                   color="green"
                 />
@@ -358,21 +360,21 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ onClose }) => {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-purple-500" />
-                API 过期状态
+                {t('securityCenter.apiExpiryStatus')}
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 <AlertStat
-                  label="已过期"
+                  label={t('securityCenter.status.expired')}
                   value={overview.expiry_overdue}
                   color="red"
                 />
                 <AlertStat
-                  label="7天内到期"
+                  label={t('securityCenter.status.expiresIn7Days')}
                   value={overview.expiry_warning}
                   color="yellow"
                 />
                 <AlertStat
-                  label="30天内到期"
+                  label={t('securityCenter.status.expiresIn30Days')}
                   value={overview.expiry_normal}
                   color="green"
                 />

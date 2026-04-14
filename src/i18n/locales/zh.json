@@ -30,10 +30,15 @@
     "back": "返回",
     "close": "关闭",
     "copy": "复制",
+    "copied": "已复制",
     "new": "新建",
     "add": "添加",
     "remove": "移除",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "done": "完成",
+    "ok": "确定",
+    "unknownError": "未知错误",
+    "viewDetails": "查看详情"
   },
   "toolbar": {
     "newItem": "新建条目 (Ctrl+N)",
@@ -68,7 +73,14 @@
     "selectItem": "选择一个条目查看详情",
     "deleteConfirm": "确定要删除 \"{{title}}\" 吗？",
     "deleteSuccess": "成功删除凭证 \"{{title}}\"",
-    "deleteFailed": "删除 \"{{title}}\" 失败，请重试\n{{error}}"
+    "deleteFailed": "删除 \"{{title}}\" 失败，请重试\n{{error}}",
+    "allItems": "全部条目",
+    "noMatch": "没有找到匹配的条目",
+    "noItems": "还没有任何条目",
+    "createFirst": "创建第一个条目",
+    "copyAsEnv": "复制为环境变量",
+    "copyAsJson": "复制为JSON",
+    "defaultProject": "项目"
   },
   "search": {
     "placeholder": "搜索标题、备注或URL... (Ctrl+K 聚焦, Enter 搜索)",
@@ -76,15 +88,31 @@
   },
   "sidebar": {
     "newProject": "新建项目",
+    "editProject": "编辑项目",
     "enterProjectName": "请输入项目名称",
     "createFailed": "创建项目失败: {{error}}",
     "updateFailed": "更新项目失败",
     "unsavedChanges": "您有未保存的更改",
     "saveFailed": "保存失败，无法跳转",
-    "deleteConfirm": "确定要删除此项目吗？"
+    "deleteConfirm": "确定要删除此项目吗？",
+    "deleteProjectConfirm": "确定要删除项目 \"{{name}}\" 吗？\n注意：该项目下的所有关联将被移除，但凭证不会被删除。",
+    "deleteFailed": "删除 \"{{name}}\" 失败，请重试\n{{error}}",
+    "myProjects": "我的项目",
+    "editProjectTitle": "编辑项目",
+    "chromeCredentials": "Chrome 凭证",
+    "importFromCsv": "从 CSV 导入",
+    "infrastructure": "基础设施",
+    "apiKeysRepo": "API Keys 仓库",
+    "domainManagement": "域名管理",
+    "sslCertificates": "SSL证书",
+    "securityCenter": "安全中心",
+    "projectNamePlaceholder": "项目名称"
   },
   "settings": {
     "title": "系统设置",
+    "version": {
+      "subtitle": "安全存储您的开发凭证"
+    },
     "security": {
       "title": "安全设置",
       "changePassword": "修改主密码",
@@ -97,6 +125,18 @@
       "clipboardClear": "剪贴板安全",
       "clipboardClearDesc": "复制密码后",
       "clipboardClearSuffix": "自动清除剪贴板",
+      "savePassword": "保存密码",
+      "timeOptions": {
+        "5minutes": "5 分钟",
+        "10minutes": "10 分钟",
+        "30minutes": "30 分钟",
+        "1hour": "1 小时",
+        "never": "从不",
+        "10seconds": "10 秒",
+        "30seconds": "30 秒",
+        "1minute": "1 分钟",
+        "neverClear": "不清除"
+      },
       "errors": {
         "currentRequired": "请输入当前密码",
         "mismatch": "两次输入的新密码不一致",
@@ -112,10 +152,12 @@
       "backupDesc": "将当前数据库备份到指定位置",
       "backupSuccess": "数据库备份成功",
       "backupFailed": "数据库备份失败",
+      "backupBtn": "备份",
       "switch": "切换数据库",
       "switchDesc": "选择其他数据库文件（需重启）",
       "switchSuccess": "数据库切换成功，请重启应用",
-      "switchFailed": "数据库切换失败"
+      "switchFailed": "数据库切换失败",
+      "switchBtn": "切换"
     },
     "danger": {
       "title": "危险操作",
@@ -124,7 +166,8 @@
       "confirm1": "警告：此操作将删除所有数据，且无法恢复！\n\n确定要继续吗？",
       "confirm2": "再次确认：您真的要删除所有凭证、项目和 API Keys 吗？",
       "clearSuccess": "所有数据已清空",
-      "clearFailed": "清空数据失败: {{error}}"
+      "clearFailed": "清空数据失败: {{error}}",
+      "clearDataBtn": "清空数据"
     },
     "language": {
       "title": "语言设置",
@@ -133,6 +176,26 @@
   },
   "project": {
     "dashboard": {
+      "editProject": "编辑项目",
+      "unsavedChanges": "您有未保存的项目更改",
+      "unsavedIndicator": "* 有未保存的更改",
+      "projectName": "项目名称",
+      "projectStatus": "项目状态",
+      "projectDescription": "项目描述",
+      "projectDescriptionPlaceholder": "描述项目的业务逻辑和目标...",
+      "projectDescriptionLabel": "项目描述",
+      "noDescription": "暂无项目描述",
+      "architectureDescription": "架构描述",
+      "architectureDescriptionPlaceholder": "描述技术栈、逻辑流或部署拓扑...",
+      "architectureDescriptionLabel": "架构描述",
+      "noArchitecture": "暂无架构描述",
+      "readmePath": "README 文件路径",
+      "readmePathPlaceholder": "例如: /path/to/README.md",
+      "readmeLoadFailed": "无法加载 README 文件",
+      "relatedLinks": "相关链接",
+      "linkName": "名称",
+      "addLink": "添加链接",
+      "saveFailed": "保存失败",
       "status": {
         "active": "开发中",
         "maintenance": "维护中",
@@ -150,14 +213,32 @@
       "user": "用户",
       "password": "密码",
       "database": "库",
-      "openAdmin": "打开管理后台"
+      "openAdmin": "打开管理后台",
+      "tabAll": "全部 ({{count}})",
+      "tabServers": "服务器 ({{count}})",
+      "tabDatabases": "数据库 ({{count}})",
+      "tabApiKeys": "API ({{count}})",
+      "tabChrome": "Chrome ({{count}})",
+      "addResource": "添加资源到此项目",
+      "servers": "服务器",
+      "databases": "数据库",
+      "apiKeys": "API Keys",
+      "chromeCredentials": "Chrome 凭证",
+      "noResources": "此项目尚未关联任何资源。"
     }
+  },
+  "projectRelations": {
+    "apiTab": "API",
+    "apiKeysGroup": "API Keys",
+    "apiKeysTitle": "API Keys",
+    "chromeTab": "Chrome"
   },
   "securityCenter": {
     "title": "安全中心",
     "subtitle": "异常聚合器 - 监控证书、域名、服务器到期提醒",
     "back": "返回",
     "alertSummary": "发现 {{count}} 个安全问题需要关注",
+    "clickToExpand": "点击展开查看完整影响范围",
     "tabs": {
       "topology": "拓扑告警",
       "overview": "概览"
@@ -166,63 +247,378 @@
       "title": "暂无异常影响链",
       "subtitle": "所有证书、域名、服务器状态正常"
     },
-    "impactChains": "异常影响链 ({{count}} 个)"
-  },
-  "domain": {
+    "impactChains": "异常影响链 ({{count}} 个)",
+    "impactScope": "影响范围:",
+    "dueDate": "到期时间",
+    "rotationStatus": "密码轮换状态",
+    "apiExpiryStatus": "API 过期状态",
     "status": {
       "expired": "已过期",
-      "warning": "即将过期",
+      "expiringSoon": "即将到期",
       "normal": "正常",
-      "good": "良好"
+      "alert": "异常",
+      "warning": "警告",
+      "expiresIn7Days": "7天内到期",
+      "expiresIn30Days": "30天内到期"
     },
+    "stats": {
+      "apiKeys": "API Keys",
+      "servers": "服务器",
+      "databases": "数据库",
+      "chromeCredentials": "Chrome凭证"
+    }
+  },
+  "domain": {
+    "title": "域名管理",
+    "subtitle": "管理您的域名和关联资源",
+    "add": "添加域名",
+    "edit": "编辑域名",
+    "searchPlaceholder": "搜索域名或注册商...",
+    "empty": "暂无域名",
+    "addFirst": "添加第一个域名",
+    "registrar": "注册商",
+    "registrarPlaceholder": "阿里云 / GoDaddy / Namecheap",
+    "registrationDate": "注册时间",
+    "expiryDate": "到期时间",
+    "enableExpiryAlert": "启用到期提醒",
+    "advance": "提前",
+    "daysReminder": "天提醒",
+    "days": "天",
+    "notes": "备注",
+    "notesPlaceholder": "域名用途说明...",
+    "domain": "域名",
+    "servers": "个服务器",
+    "certificates": "个证书",
+    "expired": "已过期",
+    "loadFailed": "加载域名列表失败",
+    "syncFailed": "同步域名信息失败: {{error}}",
+    "linkServerFailed": "关联服务器失败",
+    "unlinkServerFailed": "解除关联失败",
+    "saveFailed": "保存域名失败",
     "delete": {
       "confirm": "确定要删除此域名吗？",
       "withRelations": "域名 \"{{domain}}\" 关联了 {{relations}}。\n\n删除域名将同时解除这些关联关系。是否继续？",
       "failed": "删除域名失败"
     },
-    "loadFailed": "加载域名列表失败"
-  },
-  "certificate": {
-    "title": "SSL证书管理",
-    "subtitle": "管理SSL证书和关联域名",
+    "linkServer": "关联服务器",
+    "linkServerTitle": "关联服务器",
+    "sync": "同步信息",
+    "link": "关联",
+    "unlink": "解除关联",
+    "noServers": "暂无服务器，请先创建服务器资产",
+    "syncResult": "同步结果",
+    "dataSource": "数据来源",
+    "fallback": "备用方案",
+    "retrievedInfo": "获取到的信息:",
+    "notRetrieved": "未获取到",
+    "dnsServers": "DNS服务器",
+    "syncWarning": "未能获取到有效的域名信息。可能原因：",
+    "reasons": {
+      "noRdap": "域名后缀不支持RDAP查询",
+      "serverUnavailable": "RDAP服务器暂时不可用",
+      "privacyProtection": "域名信息被隐私保护"
+    },
     "status": {
       "expired": "已过期",
       "warning": "即将过期",
       "normal": "正常",
       "good": "良好"
-    },
+    }
+  },
+  "certificate": {
+    "title": "SSL证书管理",
+    "subtitle": "管理SSL证书和关联域名",
+    "uploadBtn": "上传证书",
+    "uploadFirst": "上传第一个证书",
+    "searchPlaceholder": "搜索证书名称、域名或颁发机构...",
+    "empty": "暂无证书",
+    "issuer": "颁发机构",
+    "expiryDate": "过期时间",
+    "domains": "包含域名",
+    "notes": "备注",
+    "copyCert": "复制证书",
+    "copyKey": "复制私钥",
+    "copyChain": "复制证书链",
+    "viewDetails": "查看详情",
+    "deployedServers": "部署服务器",
+    "noServers": "暂无部署服务器",
+    "operations": "操作",
     "copyFailed": "复制失败",
-    "deleteConfirm": "确定要删除此证书吗？",
-    "deleteFailed": "删除证书失败",
-    "loadFailed": "加载证书列表失败"
+    "loadFailed": "加载证书列表失败",
+    "delete": {
+      "confirm": "确定要删除此证书吗？",
+      "failed": "删除证书失败"
+    },
+    "upload": {
+      "title": "上传SSL证书",
+      "certName": "证书名称",
+      "certNamePlaceholder": "例如：example.com-2024",
+      "certContent": "证书内容 (PEM格式)",
+      "keyContent": "私钥内容 (可选)",
+      "chainContent": "证书链 (可选)",
+      "notes": "备注",
+      "notesPlaceholder": "证书用途说明...",
+      "uploading": "上传中...",
+      "submit": "上传",
+      "errors": {
+        "required": "请输入证书名称和证书内容"
+      },
+      "failed": "上传证书失败: {{error}}"
+    },
+    "status": {
+      "expired": "已过期",
+      "warning": "即将过期",
+      "normal": "正常",
+      "good": "良好"
+    }
   },
   "apikeys": {
     "title": "API Keys",
     "empty": "暂无 API Keys",
     "addNew": "点击上方按钮添加新的 API Key",
     "new": "新建 API Key",
+    "editApiKey": "编辑 API Key",
     "scope": "作用域",
     "deleteConfirm": "确定要删除这个 API Key 吗？",
     "deleteSuccess": "成功删除 API Key",
-    "deleteFailed": "删除失败，请重试\n{{error}}"
+    "deleteFailed": "删除失败，请重试\n{{error}}",
+    "form": {
+      "name": "名称",
+      "namePlaceholder": "例如: Aliyun Access Key",
+      "keyValue": "Key Value",
+      "keyValuePlaceholder": "输入 API Key",
+      "scope": "作用域 (可选)",
+      "scopePlaceholder": "例如: production, readonly"
+    }
   },
   "imports": {
+    "title": "Chrome 导入决策中心",
+    "importFromChrome": "从 Chrome 导入密码",
+    "importDesc": "选择 Chrome 导出的 CSV 文件，系统将自动对比并展示差异",
+    "existingChromeCredentials": "现有 Chrome 凭证",
+    "selectCsv": "选择 CSV 文件",
+    "parsing": "解析中...",
+    "processing": "处理中...",
+    "confirmImport": "确认导入",
+    "continueImport": "继续导入",
+    "unknownWebsite": "未知网站",
+    "noUsername": "无用户名",
+    "conflictItems": "冲突项 ({{count}})",
+    "conflictDesc": "密码与现有记录不同",
+    "newItems": "新增项 ({{count}})",
+    "newItemsDesc": "库中不存在的记录",
+    "updateAll": "全部更新",
+    "skipAll": "全部跳过",
+    "importAll": "全部导入",
+    "update": "更新",
+    "updateAndArchive": "更新并归档",
+    "import": "导入",
+    "imported": "已导入",
+    "skip": "跳过",
+    "existingPassword": "现有密码",
+    "importPassword": "导入密码",
     "parseFailed": "解析失败: {{error}}",
     "conflictsPending": "还有 {{count}} 条冲突记录未处理，请选择\"更新\"或\"跳过\"",
     "noSelection": "没有选择任何记录导入",
     "success": "导入完成！新增: {{imported}}, 更新: {{updated}}, 跳过: {{skipped}}",
     "failed": "导入失败: {{error}}",
-    "completed": "导入完成"
+    "completed": "导入完成",
+    "steps": {
+      "title": "操作步骤",
+      "step1": "打开 Chrome 设置 → 自动填充 → 密码管理器",
+      "step2": "点击设置图标 → 导出密码",
+      "step3": "保存 CSV 文件",
+      "step4": "点击上方\"选择 CSV 文件\"按钮"
+    },
+    "stats": {
+      "existing": "现有",
+      "thisImport": "本次导入",
+      "new": "新增",
+      "updated": "更新",
+      "skipped": "跳过",
+      "conflicts": "冲突",
+      "identical": "相同(已跳过)"
+    }
   },
   "itemModal": {
+    "title": {
+      "edit": "编辑条目",
+      "new": "新建条目"
+    },
+    "unsavedIndicator": "* 有未保存的更改",
+    "unsavedChanges": "您有未保存的条目更改",
+    "form": {
+      "title": "标题",
+      "titlePlaceholder": "例如:OpenAI API Key",
+      "websiteUrl": "网站 URL",
+      "username": "用户名",
+      "usernamePlaceholder": "user@example.com",
+      "password": "密码",
+      "passwordPlaceholder": "输入密码...",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "输入您的API Key...",
+      "url": "URL",
+      "urlPlaceholder": "https://api.openai.com",
+      "category": "分类",
+      "project": "项目",
+      "noProject": "无项目",
+      "colorIndicator": "颜色标识",
+      "notes": "备注",
+      "notesPlaceholder": "添加备注信息...",
+      "saving": "保存中...",
+      "update": "更新",
+      "create": "创建",
+      "cancel": "取消"
+    },
+    "categories": {
+      "database": "数据库",
+      "service": "服务",
+      "other": "其他"
+    },
     "errors": {
       "titleRequired": "请输入标题",
       "secretRequired": "请输入{{type}}",
       "urlRequired": "请输入网站 URL",
       "updateFailed": "更新失败: {{error}}",
-      "createFailed": "创建失败: {{error}}"
+      "createFailed": "创建失败: {{error}}",
+      "operationFailed": "操作失败: {{error}}"
     },
     "pasteConfirm": "检测到剪贴板中可能有API Key，是否自动填入？",
-    "chromeUsername": "用户名"
+    "chromeUsername": "用户名",
+    "passwordHistory": "密码历史",
+    "noHistory": "暂无历史记录",
+    "metadata": "元数据"
+  },
+  "itemDetail": {
+    "apiKey": "API Key",
+    "url": "URL",
+    "notes": "备注",
+    "passwordChange": "密码变更",
+    "createdAt": "创建时间:",
+    "lastModified": "最后修改:",
+    "colorLabel": "颜色标识:"
+  },
+  "infrastructureModal": {
+    "title": {
+      "edit": "编辑资产",
+      "new": "新建基础设施资产"
+    },
+    "form": {
+      "assetType": "资产类型",
+      "name": "名称",
+      "namePlaceholderServer": "例如:生产服务器-01",
+      "namePlaceholderDatabase": "例如:主数据库",
+      "ipAddress": "IP 地址",
+      "port": "端口",
+      "os": "操作系统",
+      "sshUser": "SSH 用户",
+      "password": "密码",
+      "sshPassword": "SSH 密码",
+      "description": "描述",
+      "serverDescription": "服务器用途描述...",
+      "advancedConfig": "高级配置",
+      "region": "区域/机房",
+      "regionPlaceholder": "如: 华东-上海",
+      "provider": "云服务商",
+      "providerSelect": "请选择",
+      "status": "状态",
+      "tags": "标签",
+      "tagsPlaceholder": "用逗号分隔,如: 生产,Web",
+      "sshKey": "SSH 私钥",
+      "leaseSettings": "租期设置",
+      "permanentUse": "永久使用",
+      "enableExpiryAlert": "启用到期提醒",
+      "startDate": "开始时间",
+      "endDate": "结束时间",
+      "alertDays": "提前提醒(天)",
+      "dbType": "数据库类型",
+      "host": "Host",
+      "databaseName": "数据库名",
+      "username": "用户名",
+      "dbPassword": "密码",
+      "dbPasswordPlaceholder": "数据库密码",
+      "adminUrl": "管理后台 URL",
+      "manualInput": "(手动输入)",
+      "autoGenerate": "(自动生成)",
+      "autoGenerateHint": "根据数据库类型和主机自动生成,可手动修改",
+      "dbDescription": "数据库用途描述...",
+      "serviceLease": "服务租期设置",
+      "relatedProject": "关联项目(可选)",
+      "selectProject": "-- 选择项目 --",
+      "saving": "保存中...",
+      "save": "保存",
+      "create": "创建",
+      "cancel": "取消"
+    },
+    "types": {
+      "server": "服务器",
+      "database": "数据库"
+    },
+    "providers": {
+      "aliyun": "阿里云",
+      "tencent": "腾讯云",
+      "huawei": "华为云",
+      "selfhosted": "自建",
+      "other": "其他"
+    },
+    "status": {
+      "running": "运行中",
+      "stopped": "已停止",
+      "maintenance": "维护中"
+    },
+    "errors": {
+      "serverRequired": "名称和 IP 地址不能为空",
+      "databaseRequired": "名称、Host 和数据库名不能为空",
+      "updateFailed": "更新失败",
+      "createFailed": "创建失败"
+    }
+  },
+  "infrastructureView": {
+    "title": "基础设施资产",
+    "summary": "共 {{serverCount}} 台服务器, {{dbCount}} 个数据库",
+    "newAsset": "新建资产",
+    "tabAll": "全部 ({{count}})",
+    "tabServers": "服务器 ({{count}})",
+    "tabDatabases": "数据库 ({{count}})",
+    "emptyTitle": "暂无基础设施资产",
+    "emptyDesc": "点击右上角\"新建资产\"添加服务器或数据库",
+    "serverLabel": "服务器",
+    "databaseLabel": "数据库",
+    "ipLabel": "IP:",
+    "sshLabel": "SSH:",
+    "passwordLabel": "密码:",
+    "databaseNameLabel": "库名:",
+    "connectionLabel": "连接:",
+    "hostLabel": "Host:",
+    "ipPort": "IP:端口",
+    "hostPort": "Host:端口",
+    "sshCommand": "SSH 命令",
+    "password": "密码",
+    "databaseName": "库名",
+    "connectionString": "连接字符串",
+    "copyIpPort": "复制 IP:端口",
+    "copyHostPort": "复制 Host:端口",
+    "copySshCommand": "复制 SSH 命令",
+    "copyPassword": "复制密码",
+    "copyDatabaseName": "复制库名",
+    "copyConnectionString": "复制连接字符串 (Navicat/DBeaver 可用)",
+    "openAdminPanel": "打开管理后台",
+    "noRelatedResources": "暂无关联域名和证书",
+    "view": "显示",
+    "hidePassword": "隐藏密码",
+    "showPassword": "显示密码",
+    "protectsDomains": "保护域名: {{domains}}",
+    "ipAddress": "IP 地址",
+    "ip": "IP",
+    "port": "端口",
+    "sshUser": "SSH 用户",
+    "status": "状态",
+    "unknown": "未知",
+    "authInfo": "认证信息",
+    "deleteServerWithRelations": "服务器 \"{{title}}\" 关联了以下域名:\n{{domains}}\n\n删除服务器将同时解除这些关联关系。是否继续？",
+    "deleteServerConfirm": "确定要删除服务器 \"{{title}}\" 吗？",
+    "deleteConfirm": "确定要删除 \"{{title}}\" 吗？",
+    "deleteFailed": "删除 \"{{title}}\" 失败,请重试\n{{error}}",
+    "deleteFailedLog": "删除失败"
   }
 }

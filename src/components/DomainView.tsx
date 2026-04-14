@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Globe, Plus, Search, Server, Shield, Trash2, Edit2, RefreshCw, CheckCircle, Link2, X, Info } from 'lucide-react';
 import type { Domain, DomainInfoResult } from '../types';
 import api from '../lib/tauri-api';
+import { useTranslation } from 'react-i18next';
 
 interface DomainViewProps {
   onClose: () => void;
 }
 
 const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       setDomains(data);
     } catch (error) {
       console.error('Failed to load domains:', error);
-      alert('加载域名列表失败');
+      alert(t('domain.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -64,10 +66,10 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'expired': return '已过期';
-      case 'warning': return '即将过期';
-      case 'normal': return '正常';
-      case 'good': return '良好';
+      case 'expired': return t('domain.status.expired');
+      case 'warning': return t('domain.status.expiringSoon');
+      case 'normal': return t('domain.status.normal');
+      case 'good': return t('domain.status.good');
       default: return '';
     }
   };
@@ -77,12 +79,15 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
     const hasServers = domain.servers && domain.servers.length > 0;
     const hasCertificates = domain.certificates && domain.certificates.length > 0;
     
-    let confirmMsg = '确定要删除此域名吗？';
+    let confirmMsg = t('domain.delete.confirm');
     if (hasServers || hasCertificates) {
       const relations: string[] = [];
-      if (hasServers) relations.push(`${domain.servers!.length} 个服务器`);
-      if (hasCertificates) relations.push(`${domain.certificates!.length} 个证书`);
-      confirmMsg = `域名 "${domain.domain}" 关联了 ${relations.join('、')}。\n\n删除域名将同时解除这些关联关系。是否继续？`;
+      if (hasServers) relations.push(`${domain.servers!.length} ${t('domain.servers')}`);
+      if (hasCertificates) relations.push(`${domain.certificates!.length} ${t('domain.certificates')}`);
+      confirmMsg = t('domain.delete.confirmWithRelations', { 
+        domain: domain.domain, 
+        relations: relations.join('、') 
+      });
     }
     
     if (!confirm(confirmMsg)) return;
@@ -91,7 +96,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       await loadDomains();
     } catch (error) {
       console.error('Failed to delete domain:', error);
-      alert('删除域名失败');
+      alert(t('domain.delete.failed'));
     }
   };
 
@@ -116,7 +121,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       setTimeout(() => setSyncedDomain(null), 2000);
     } catch (error) {
       console.error('Failed to sync domain:', error);
-      alert('同步域名信息失败: ' + (error as Error).message);
+      alert(t('domain.syncFailed', { error: (error as Error).message }));
     } finally {
       setSyncingDomain(null);
     }
@@ -156,7 +161,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       // 保持弹窗打开，刷新关联状态
     } catch (error) {
       console.error('Failed to link server:', error);
-      alert('关联服务器失败');
+      alert(t('domain.linkServerFailed'));
     }
   };
 
@@ -168,7 +173,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
       await loadDomains();
     } catch (error) {
       console.error('Failed to unlink server:', error);
-      alert('解除关联失败');
+      alert(t('domain.unlinkServerFailed'));
     }
   };
 
@@ -182,8 +187,8 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
               <Globe className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">域名管理</h1>
-              <p className="text-sm text-gray-500">管理您的域名和关联资源</p>
+              <h1 className="text-xl font-semibold text-gray-900">{t('domain.title')}</h1>
+              <p className="text-sm text-gray-500">{t('domain.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -192,13 +197,13 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              添加域名
+              {t('domain.add')}
             </button>
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              返回
+              {t('common.back')}
             </button>
           </div>
         </div>
@@ -212,7 +217,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索域名或注册商..."
+            placeholder={t('domain.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -227,12 +232,12 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
         ) : filteredDomains.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Globe className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>暂无域名</p>
+            <p>{t('domain.empty')}</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 text-blue-600 hover:text-blue-700"
             >
-              添加第一个域名
+              {t('domain.addFirst')}
             </button>
           </div>
         ) : (
@@ -257,13 +262,13 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                       
                       <div className="grid grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
                         <div>
-                          <span className="text-gray-400">注册商:</span> {domain.registrar || '-'}
+                          <span className="text-gray-400">{t('domain.registrar')}:</span> {domain.registrar || '-'}
                         </div>
                         <div>
-                          <span className="text-gray-400">注册时间:</span> {domain.registration_date || '-'}
+                          <span className="text-gray-400">{t('domain.registrationDate')}:</span> {domain.registration_date || '-'}
                         </div>
                         <div>
-                          <span className="text-gray-400">到期时间:</span> {domain.expiry_date || '-'}
+                          <span className="text-gray-400">{t('domain.expiryDate')}:</span> {domain.expiry_date || '-'}
                         </div>
                       </div>
 
@@ -311,8 +316,8 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                                   title={`到期时间: ${cert.expires_at}`}
                                 >
                                   {cert.cert_name}
-                                  {isExpired && ' (已过期)'}
-                                  {isWarning && ` (${daysUntilExpiry}天)`}
+                                  {isExpired && ` (${t('domain.expired')})`}
+                                  {isWarning && ` (${daysUntilExpiry}${t('domain.days')})`}
                                 </span>
                               );
                             })}
@@ -326,7 +331,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                       <button
                         onClick={() => openLinkModal(domain)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="关联服务器"
+                        title={t('domain.linkServer')}
                       >
                         <Link2 className="w-4 h-4" />
                       </button>
@@ -334,7 +339,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                         onClick={() => handleSyncDomain(domain)}
                         disabled={syncingDomain === domain.id}
                         className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title="同步信息"
+                        title={t('domain.sync')}
                       >
                         {syncedDomain === domain.id ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
@@ -347,14 +352,14 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                       <button
                         onClick={() => setEditingDomain(domain)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="编辑"
+                        title={t('common.edit')}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(domain)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="删除"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -372,7 +377,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">关联服务器 - {linkingDomain.domain}</h3>
+              <h3 className="text-lg font-semibold">{t('domain.linkServerTitle')} - {linkingDomain.domain}</h3>
               <button
                 onClick={() => setLinkingDomain(null)}
                 className="p-1 hover:bg-gray-100 rounded"
@@ -387,7 +392,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : servers.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">暂无服务器，请先创建服务器资产</p>
+                <p className="text-center text-gray-500 py-8">{t('domain.noServers')}</p>
               ) : (
                 <div className="space-y-2">
                   {servers.map(server => {
@@ -414,7 +419,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                               : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
                           }`}
                         >
-                          {isLinked ? '解除关联' : '关联'}
+                          {isLinked ? t('domain.unlink') : t('domain.link')}
                         </button>
                       </div>
                     );
@@ -428,7 +433,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                 onClick={() => setLinkingDomain(null)}
                 className="w-full py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                完成
+                {t('common.done')}
               </button>
             </div>
           </div>
@@ -442,7 +447,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
                 <Info className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-semibold">同步结果 - {syncResult.domain}</h3>
+                <h3 className="text-lg font-semibold">{t('domain.syncResult')} - {syncResult.domain}</h3>
               </div>
               <button
                 onClick={() => setSyncResult(null)}
@@ -455,46 +460,46 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
             <div className="p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">数据来源:</span>
+                  <span className="text-gray-500">{t('domain.dataSource')}:</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${
                     syncResult.result.source === 'rdap' 
                       ? 'bg-green-100 text-green-600' 
                       : 'bg-yellow-100 text-yellow-600'
                   }`}>
-                    {syncResult.result.source === 'rdap' ? 'RDAP' : '备用方案'}
+                    {syncResult.result.source === 'rdap' ? 'RDAP' : t('domain.fallback')}
                   </span>
                 </div>
                 
                 <div className="border-t pt-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">获取到的信息:</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">{t('domain.retrievedInfo')}</h4>
                   
                   {syncResult.result.registrar ? (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">注册商:</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.registrar')}:</span>
                       <span className="font-medium">{syncResult.result.registrar}</span>
                     </div>
                   ) : (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">注册商:</span>
-                      <span className="text-gray-400 italic">未获取到</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.registrar')}:</span>
+                      <span className="text-gray-400 italic">{t('domain.notRetrieved')}</span>
                     </div>
                   )}
                   
                   {syncResult.result.registration_date ? (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">注册时间:</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.registrationDate')}:</span>
                       <span className="font-medium">{syncResult.result.registration_date}</span>
                     </div>
                   ) : (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">注册时间:</span>
-                      <span className="text-gray-400 italic">未获取到</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.registrationDate')}:</span>
+                      <span className="text-gray-400 italic">{t('domain.notRetrieved')}</span>
                     </div>
                   )}
                   
                   {syncResult.result.expiry_date ? (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">到期时间:</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.expiryDate')}:</span>
                       <span className={`font-medium ${
                         new Date(syncResult.result.expiry_date) < new Date() 
                           ? 'text-red-600' 
@@ -507,15 +512,15 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                     </div>
                   ) : (
                     <div className="flex items-start gap-2 text-sm mb-2">
-                      <span className="text-gray-500 w-20 flex-shrink-0">到期时间:</span>
-                      <span className="text-gray-400 italic">未获取到</span>
+                      <span className="text-gray-500 w-20 flex-shrink-0">{t('domain.expiryDate')}:</span>
+                      <span className="text-gray-400 italic">{t('domain.notRetrieved')}</span>
                     </div>
                   )}
                 </div>
                 
                 {syncResult.result.name_servers.length > 0 && (
                   <div className="border-t pt-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">DNS服务器:</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">{t('domain.dnsServers')}:</h4>
                     <div className="flex flex-wrap gap-1">
                       {syncResult.result.name_servers.map((ns, idx) => (
                         <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
@@ -529,12 +534,12 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                 {!syncResult.result.registrar && !syncResult.result.expiry_date && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
                     <p className="text-sm text-yellow-700">
-                      ⚠️ 未能获取到有效的域名信息。可能原因：
+                      {t('domain.syncWarning')}
                     </p>
                     <ul className="text-xs text-yellow-600 mt-1 list-disc list-inside">
-                      <li>域名后缀不支持RDAP查询</li>
-                      <li>RDAP服务器暂时不可用</li>
-                      <li>域名信息被隐私保护</li>
+                      <li>{t('domain.reasons.noRdap')}</li>
+                      <li>{t('domain.reasons.serverUnavailable')}</li>
+                      <li>{t('domain.reasons.privacyProtection')}</li>
                     </ul>
                   </div>
                 )}
@@ -546,7 +551,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
                 onClick={() => setSyncResult(null)}
                 className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                确定
+                {t('common.ok')}
               </button>
             </div>
           </div>
@@ -576,7 +581,7 @@ const DomainView: React.FC<DomainViewProps> = ({ onClose }) => {
               setEditingDomain(null);
             } catch (error) {
               console.error('Failed to save domain:', error);
-              alert('保存域名失败');
+              alert(t('domain.saveFailed'));
             }
           }}
         />
@@ -593,6 +598,7 @@ interface DomainModalProps {
 }
 
 const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState<Domain>({
     domain: domain?.domain || '',
     registrar: domain?.registrar || '',
@@ -614,10 +620,10 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold">
-            {domain ? '编辑域名' : '添加域名'}
+            {domain ? t('domain.edit') : t('domain.add')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <span className="sr-only">关闭</span>
+            <span className="sr-only">{t('common.close')}</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -626,7 +632,7 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">域名 *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('domain.domain')} *</label>
             <input
               type="text"
               value={form.domain}
@@ -638,19 +644,19 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">注册商</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('domain.registrar')}</label>
             <input
               type="text"
               value={form.registrar}
               onChange={(e) => setForm(prev => ({ ...prev, registrar: e.target.value }))}
-              placeholder="阿里云 / GoDaddy / Namecheap"
+              placeholder={t('domain.registrarPlaceholder')}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">注册时间</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('domain.registrationDate')}</label>
               <input
                 type="date"
                 value={form.registration_date}
@@ -659,7 +665,7 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">到期时间</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('domain.expiryDate')}</label>
               <input
                 type="date"
                 value={form.expiry_date}
@@ -677,11 +683,11 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
                 onChange={(e) => setForm(prev => ({ ...prev, enable_expiry_alert: e.target.checked }))}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">启用到期提醒</span>
+              <span className="text-sm text-gray-700">{t('domain.enableExpiryAlert')}</span>
             </label>
             {form.enable_expiry_alert && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">提前</span>
+                <span className="text-sm text-gray-500">{t('domain.advance')}</span>
                 <input
                   type="number"
                   value={form.expiry_alert_days}
@@ -690,19 +696,19 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
                   max={365}
                   className="w-20 px-2 py-1 border rounded text-center"
                 />
-                <span className="text-sm text-gray-500">天提醒</span>
+                <span className="text-sm text-gray-500">{t('domain.daysReminder')}</span>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('domain.notes')}</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="域名用途说明..."
+              placeholder={t('domain.notesPlaceholder')}
             />
           </div>
 
@@ -712,13 +718,13 @@ const DomainModal: React.FC<DomainModalProps> = ({ domain, onClose, onSave }) =>
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              取消
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {domain ? '保存' : '添加'}
+              {domain ? t('common.save') : t('common.add')}
             </button>
           </div>
         </form>

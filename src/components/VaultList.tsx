@@ -4,16 +4,18 @@ import { Copy, Edit, Trash2, Plus } from 'lucide-react';
 import api from '../lib/tauri-api';
 import { smartCopy } from '../lib/smart-copy';
 import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
+import { useTranslation } from 'react-i18next';
 
 export default function VaultList({ onEditItem }: { onEditItem: (item: any) => void }) {
   const { state, dispatch } = useApp();
+  const { t } = useTranslation();
   // 记录正在删除的项目 ID，避免多次点击
   const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
 
   // 检查未保存更改并执行操作
   const checkUnsavedAndExecute = async (action: () => void) => {
     if (state.hasUnsavedChanges) {
-      const result = await showUnsavedDialog('您有未保存的更改');
+      const result = await showUnsavedDialog(t('sidebar.unsavedChanges'));
       if (result === 'cancel') return;
       if (result === 'save') {
         // 用户选择保存，执行保存回调
@@ -22,7 +24,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
             await state.saveCallback();
           } catch (error) {
             console.error('保存失败:', error);
-            alert('保存失败，无法跳转');
+            alert(t('sidebar.saveFailed'));
             return;
           }
         }
@@ -68,7 +70,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
     // 2. 使用异步确认对话框，确保UI不会提前更新
     const confirmed = await new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        const result = window.confirm(`确定要删除 "${item.title}" 吗？`);
+        const result = window.confirm(t('vault.deleteConfirm', { title: item.title }));
         resolve(result);
       }, 0);
     });
@@ -92,11 +94,11 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
         dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
       }
       
-      console.log(`成功删除凭证 "${item.title}"`);
+      console.log(t('vault.deleteSuccess', { title: item.title }));
       
     } catch (error) {
       console.error('删除失败:', error);
-      alert(`删除 "${item.title}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      alert(t('vault.deleteFailed', { title: item.title, error: error instanceof Error ? error.message : t('common.unknownError') }));
       // 失败时不需要调用 refreshData，因为我们从未修改本地状态
       
     } finally {
@@ -142,8 +144,8 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
           <div className="flex items-center space-x-3">
             <h2 className="text-lg font-semibold text-text">
               {state.selectedProject
-                ? state.projects.find(p => p.id === state.selectedProject)?.name || '项目'
-                : '全部条目'}
+                ? state.projects.find(p => p.id === state.selectedProject)?.name || t('vault.defaultProject')
+                : t('vault.allItems', '全部条目')}
             </h2>
             {chromeCount > 0 && (
               <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
@@ -154,7 +156,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
           <button
             onClick={() => onEditItem(null)} // null indicates new item
             className="p-1 hover:bg-surface2 rounded transition-colors"
-            title="新建条目"
+            title={t('toolbar.newItem', '新建条目')}
           >
             <Plus className="w-4 h-4 text-text2" />
           </button>
@@ -226,7 +228,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                     handleCopy(item, 'raw');
                   }}
                   className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-accent"
-                  title="复制密钥"
+                  title={t('common.copy')}
                 >
                   <Copy className="w-3 h-3" />
                 </button>
@@ -237,7 +239,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                     handleCopy(item, 'env');
                   }}
                   className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-accent"
-                  title="复制为环境变量"
+                  title={t('vault.copyAsEnv', '复制为环境变量')}
                 >
                   <span className="text-xs font-mono">ENV</span>
                 </button>
@@ -248,7 +250,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                     handleCopy(item, 'json');
                   }}
                   className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-accent"
-                  title="复制为JSON"
+                  title={t('vault.copyAsJson', '复制为JSON')}
                 >
                   <span className="text-xs font-mono">{`{}`}</span>
                 </button>
@@ -259,7 +261,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                 onEditItem(item);
               }}
               className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-warning"
-              title="编辑"
+              title={t('common.edit')}
             >
               <Edit className="w-3 h-3" />
             </button>
@@ -268,7 +270,7 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
                     handleDelete(e, item);
                   }}
                   className="p-1 hover:bg-surface2 rounded transition-colors text-text2 hover:text-error"
-                  title="删除"
+                  title={t('common.delete')}
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -281,13 +283,13 @@ export default function VaultList({ onEditItem }: { onEditItem: (item: any) => v
           <div className="text-center py-8">
             <div className="text-6xl mb-4 opacity-50">🔑</div>
             <p className="text-text2">
-              {state.searchQuery ? '没有找到匹配的条目' : '还没有任何条目'}
+              {state.searchQuery ? t('vault.noMatch', '没有找到匹配的条目') : t('vault.noItems', '还没有任何条目')}
             </p>
             <button
               onClick={() => onEditItem(null)} // null indicates new item
               className="btn btn-sm mt-4"
             >
-              创建第一个条目
+              {t('vault.createFirst', '创建第一个条目')}
             </button>
           </div>
         )}

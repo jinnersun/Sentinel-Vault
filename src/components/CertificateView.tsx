@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Plus, Search, Trash2, Copy, FileText, Key, Link2, CheckCircle, X, Server } from 'lucide-react';
 import type { SSLCertificate } from '../types';
 import api from '../lib/tauri-api';
+import { useTranslation } from 'react-i18next';
 
 interface CertificateViewProps {
   onClose: () => void;
 }
 
 const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const [certificates, setCertificates] = useState<SSLCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +25,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
       setCertificates(data);
     } catch (error) {
       console.error('Failed to load certificates:', error);
-      alert('加载证书列表失败');
+      alert(t('certificate.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -60,10 +62,10 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'expired': return '已过期';
-      case 'warning': return '即将过期';
-      case 'normal': return '正常';
-      default: return '良好';
+      case 'expired': return t('certificate.status.expired');
+      case 'warning': return t('certificate.status.expiringSoon');
+      case 'normal': return t('certificate.status.normal');
+      default: return t('certificate.status.good');
     }
   };
 
@@ -75,20 +77,20 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
       setTimeout(() => setCopying(null), 1500);
     } catch (error) {
       console.error('Failed to copy:', error);
-      alert('复制失败');
+      alert(t('certificate.copyFailed'));
       setCopying(null);
     }
   };
 
   // 删除证书
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除此证书吗？')) return;
+    if (!confirm(t('certificate.delete.confirm'))) return;
     try {
       await api.deleteCertificate(id);
       await loadCertificates();
     } catch (error) {
       console.error('Failed to delete certificate:', error);
-      alert('删除证书失败');
+      alert(t('certificate.delete.failed'));
     }
   };
 
@@ -102,8 +104,8 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
               <Shield className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">SSL证书管理</h1>
-              <p className="text-sm text-gray-500">管理SSL证书和关联域名</p>
+              <h1 className="text-xl font-semibold text-gray-900">{t('certificate.title')}</h1>
+              <p className="text-sm text-gray-500">{t('certificate.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -112,13 +114,13 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              上传证书
+              {t('certificate.uploadBtn')}
             </button>
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              返回
+              {t('common.back')}
             </button>
           </div>
         </div>
@@ -132,7 +134,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索证书名称、域名或颁发机构..."
+            placeholder={t('certificate.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
@@ -147,12 +149,12 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
         ) : filteredCerts.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Shield className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>暂无证书</p>
+            <p>{t('certificate.empty')}</p>
             <button
               onClick={() => setShowUploadModal(true)}
               className="mt-4 text-green-600 hover:text-green-700"
             >
-              上传第一个证书
+              {t('certificate.uploadFirst')}
             </button>
           </div>
         ) : (
@@ -175,16 +177,16 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
                       
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                         <div>
-                          <span className="text-gray-400">颁发机构:</span> {cert.issuer || '-'}
+                          <span className="text-gray-400">{t('certificate.issuer')}:</span> {cert.issuer || '-'}
                         </div>
                         <div>
-                          <span className="text-gray-400">过期时间:</span> {cert.expires_at}
+                          <span className="text-gray-400">{t('certificate.expiryDate')}:</span> {cert.expires_at}
                         </div>
                       </div>
 
                       {/* 域名列表 */}
                       <div className="mb-3">
-                        <span className="text-sm text-gray-400">包含域名:</span>
+                        <span className="text-sm text-gray-400">{t('certificate.domains')}:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {cert.domains.map((domain, idx) => (
                             <span key={idx} className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded">
@@ -210,7 +212,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
                           ) : (
                             <Copy className="w-4 h-4" />
                           )}
-                          {copying === `cert-${cert.id}` ? '已复制' : '复制证书'}
+                          {copying === `cert-${cert.id}` ? t('common.copied') : t('certificate.copyCert')}
                         </button>
                         
                         {cert.key_file_path && (
@@ -224,7 +226,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
                             ) : (
                               <Key className="w-4 h-4" />
                             )}
-                            {copying === `key-${cert.id}` ? '已复制' : '复制私钥'}
+                            {copying === `key-${cert.id}` ? t('common.copied') : t('certificate.copyKey')}
                           </button>
                         )}
                         
@@ -233,7 +235,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
                           className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           <FileText className="w-4 h-4" />
-                          查看详情
+                          {t('certificate.viewDetails')}
                         </button>
                       </div>
                     </div>
@@ -243,7 +245,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
                       <button
                         onClick={() => handleDelete(cert.id!)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="删除"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -287,6 +289,7 @@ interface UploadModalProps {
 }
 
 const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     cert_name: '',
     cert_content: '',
@@ -299,7 +302,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.cert_name.trim() || !form.cert_content.trim()) {
-      alert('请输入证书名称和证书内容');
+      alert(t('certificate.upload.errors.required'));
       return;
     }
 
@@ -315,7 +318,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
       onSuccess();
     } catch (error) {
       console.error('Failed to upload certificate:', error);
-      alert('上传证书失败: ' + error);
+      alert(t('certificate.upload.failed', { error: String(error) }));
     } finally {
       setLoading(false);
     }
@@ -325,7 +328,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">上传SSL证书</h2>
+          <h2 className="text-lg font-semibold">{t('certificate.upload.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
@@ -333,12 +336,12 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">证书名称 *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('certificate.upload.certName')} *</label>
             <input
               type="text"
               value={form.cert_name}
               onChange={(e) => setForm(prev => ({ ...prev, cert_name: e.target.value }))}
-              placeholder="例如：example.com-2024"
+              placeholder={t('certificate.upload.certNamePlaceholder')}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
@@ -346,7 +349,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              证书内容 (PEM格式) *
+              {t('certificate.upload.certContent')}
             </label>
             <textarea
               value={form.cert_content}
@@ -360,7 +363,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              私钥内容 (可选)
+              {t('certificate.upload.keyContent')}
             </label>
             <textarea
               value={form.key_content}
@@ -373,7 +376,7 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              证书链 (可选)
+              {t('certificate.upload.chainContent')}
             </label>
             <textarea
               value={form.chain_content}
@@ -385,12 +388,12 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('certificate.upload.notes')}</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
               rows={2}
-              placeholder="证书用途说明..."
+              placeholder={t('certificate.upload.notesPlaceholder')}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
             />
           </div>
@@ -401,14 +404,14 @@ const UploadCertificateModal: React.FC<UploadModalProps> = ({ onClose, onSuccess
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              取消
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
-              {loading ? '上传中...' : '上传'}
+              {loading ? t('certificate.upload.uploading') : t('certificate.upload.submit')}
             </button>
           </div>
         </form>
@@ -426,6 +429,7 @@ interface DetailModalProps {
 }
 
 const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClose, onCopy, copying }) => {
+  const { t } = useTranslation();
   const [servers, setServers] = useState<{ id: number; title: string; ip?: string }[]>([]);
   const [loadingServers, setLoadingServers] = useState(false);
 
@@ -459,17 +463,17 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-400">颁发机构:</span>
+              <span className="text-gray-400">{t('certificate.issuer')}:</span>
               <p className="font-medium">{certificate.issuer || '-'}</p>
             </div>
             <div>
-              <span className="text-gray-400">过期时间:</span>
+              <span className="text-gray-400">{t('certificate.expiryDate')}:</span>
               <p className="font-medium">{certificate.expires_at}</p>
             </div>
           </div>
 
           <div>
-            <span className="text-gray-400 text-sm">包含域名:</span>
+            <span className="text-gray-400 text-sm">{t('certificate.domains')}:</span>
             <div className="flex flex-wrap gap-2 mt-1">
               {certificate.domains.map((domain, idx) => (
                 <span key={idx} className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded">
@@ -481,21 +485,21 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
 
           {certificate.notes && (
             <div>
-              <span className="text-gray-400 text-sm">备注:</span>
+              <span className="text-gray-400 text-sm">{t('certificate.notes')}:</span>
               <p className="text-sm mt-1">{certificate.notes}</p>
             </div>
           )}
 
           {/* 部署服务器列表 */}
           <div>
-            <span className="text-gray-400 text-sm">部署服务器:</span>
+            <span className="text-gray-400 text-sm">{t('certificate.deployedServers')}:</span>
             {loadingServers ? (
               <div className="flex items-center gap-2 mt-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                <span className="text-sm text-gray-500">加载中...</span>
+                <span className="text-sm text-gray-500">{t('common.loading')}</span>
               </div>
             ) : servers.length === 0 ? (
-              <p className="text-sm text-gray-500 mt-1">暂无部署服务器</p>
+              <p className="text-sm text-gray-500 mt-1">{t('certificate.noServers')}</p>
             ) : (
               <div className="flex flex-wrap gap-2 mt-2">
                 {servers.map(server => (
@@ -513,7 +517,7 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
           </div>
 
           <div className="pt-4 border-t">
-            <h4 className="text-sm font-medium mb-3">操作</h4>
+            <h4 className="text-sm font-medium mb-3">{t('certificate.operations')}</h4>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => onCopy(certificate.id!, 'cert', `cert-${certificate.id}-detail`)}
@@ -521,7 +525,7 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
                 className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
               >
                 {copying === `cert-${certificate.id}-detail` ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copying === `cert-${certificate.id}-detail` ? '已复制' : '复制证书'}
+                {copying === `cert-${certificate.id}-detail` ? t('common.copied') : t('certificate.copyCert')}
               </button>
               
               {certificate.key_file_path && (
@@ -531,7 +535,7 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
                   className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors"
                 >
                   {copying === `key-${certificate.id}-detail` ? <CheckCircle className="w-4 h-4" /> : <Key className="w-4 h-4" />}
-                  {copying === `key-${certificate.id}-detail` ? '已复制' : '复制私钥'}
+                  {copying === `key-${certificate.id}-detail` ? t('common.copied') : t('certificate.copyKey')}
                 </button>
               )}
               
@@ -542,7 +546,7 @@ const CertificateDetailModal: React.FC<DetailModalProps> = ({ certificate, onClo
                   className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   {copying === `chain-${certificate.id}-detail` ? <CheckCircle className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                  {copying === `chain-${certificate.id}-detail` ? '已复制' : '复制证书链'}
+                  {copying === `chain-${certificate.id}-detail` ? t('common.copied') : t('certificate.copyChain')}
                 </button>
               )}
             </div>

@@ -4,6 +4,7 @@ import { Copy, Edit, ExternalLink, Eye, EyeOff, History, ChevronDown, ChevronUp 
 import api from '../lib/tauri-api';
 import { formatDate } from '../lib/utils';
 import { smartCopy } from '../lib/smart-copy';
+import { useTranslation } from 'react-i18next';
 
 interface HistoryRecord {
   id: number;
@@ -15,6 +16,7 @@ interface HistoryRecord {
 
 export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => void }) {
   const { state, dispatch } = useApp();
+  const { t } = useTranslation();
   const [showSecret, setShowSecret] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
@@ -56,7 +58,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
     // 使用异步确认对话框，确保UI不会提前更新
     const confirmed = await new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        const result = window.confirm(`确定要删除 "${itemTitle}" 吗？`);
+        const result = window.confirm(t('vault.deleteConfirm', { title: itemTitle }));
         resolve(result);
       }, 0);
     });
@@ -77,11 +79,11 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
       dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
       
       // 可选：显示成功提示
-      console.log(`成功删除凭证 "${itemTitle}"`);
+      console.log(t('vault.deleteSuccess', { title: itemTitle }));
       
     } catch (error) {
       console.error('删除失败:', error);
-      alert(`删除 "${itemTitle}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      alert(t('vault.deleteFailed', { title: itemTitle, error: error instanceof Error ? error.message : t('common.unknownError') }));
       // 失败时不需要调用 refreshData，因为我们从未修改本地状态
       // 用户可以重新尝试删除
     }
@@ -152,16 +154,16 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
             <button
               onClick={handleEdit}
               className="btn btn-sm"
-              title="编辑"
+              title={t('common.edit')}
             >
               <Edit className="w-4 h-4" />
             </button>
             <button
               onClick={handleDelete}
               className="btn-secondary btn-sm text-error hover:bg-error hover:text-background"
-              title="删除"
+              title={t('common.delete')}
             >
-              删除
+              {t('common.delete')}
             </button>
           </div>
         </div>
@@ -173,12 +175,12 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium text-text uppercase tracking-wider">
-              {state.selectedItem.category === 'Chrome' ? '密码' : 'API Key'}
+              {state.selectedItem.category === 'Chrome' ? t('password.title') : t('itemDetail.apiKey')}
             </label>
             <button
               onClick={() => setShowSecret(!showSecret)}
               className="p-1 hover:bg-surface2 rounded transition-colors"
-              title={showSecret ? '隐藏密钥' : '显示密钥'}
+              title={showSecret ? t('common.close') : t('common.edit')}
             >
               {showSecret ? <EyeOff className="w-4 h-4 text-text2" /> : <Eye className="w-4 h-4 text-text2" />}
             </button>
@@ -197,7 +199,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
               className="btn btn-sm flex-1"
             >
               <Copy className="w-4 h-4 mr-2" />
-              复制原始值
+              {t('common.copy')}
             </button>
             <button
               id="detail-copy-env"
@@ -205,7 +207,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
               className="btn btn-sm flex-1"
             >
               <Copy className="w-4 h-4 mr-2" />
-              复制为环境变量
+              {t('common.copy')} ENV
             </button>
             <button
               id="detail-copy-json"
@@ -213,7 +215,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
               className="btn btn-sm flex-1"
             >
               <Copy className="w-4 h-4 mr-2" />
-              复制为JSON
+              {t('common.copy')} JSON
             </button>
           </div>
         </div>
@@ -222,7 +224,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
         {state.selectedItem.category === 'Chrome' && state.selectedItem.notes && (
           <div>
             <label className="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
-              用户名
+              {t('itemModal.chromeUsername')}
             </label>
             <div className="bg-background rounded-lg p-4 border border-surface2">
               <div className="text-text">
@@ -237,7 +239,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
         {state.selectedItem.url && (
           <div>
             <label className="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
-              URL
+              {t('itemDetail.url')}
             </label>
             <div className="bg-background rounded-lg p-4 border border-surface2">
               <div className="flex items-center justify-between">
@@ -259,7 +261,7 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
         {state.selectedItem.notes && (
           <div>
             <label className="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
-              备注
+              {t('itemDetail.notes')}
             </label>
             <div className="bg-background rounded-lg p-4 border border-surface2">
               <div className="text-text whitespace-pre-wrap">
@@ -276,23 +278,23 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
             className="flex items-center space-x-2 text-sm font-medium text-text uppercase tracking-wider mb-3 hover:text-accent transition-colors"
           >
             <History className="w-4 h-4" />
-            <span>密码历史</span>
+            <span>{t('itemModal.passwordHistory', '密码历史')}</span>
             {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           
           {showHistory && (
             <div className="bg-background rounded-lg p-4 border border-surface2">
               {loadingHistory ? (
-                <div className="text-center py-4 text-text2">加载中...</div>
+                <div className="text-center py-4 text-text2">{t('common.loading')}</div>
               ) : history.length === 0 ? (
-                <div className="text-center py-4 text-text2">暂无历史记录</div>
+                <div className="text-center py-4 text-text2">{t('itemModal.noHistory', '暂无历史记录')}</div>
               ) : (
                 <div className="space-y-3">
                   {history.map((record) => (
                     <div key={record.id} className="border-b border-surface2 last:border-0 pb-3 last:pb-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-text2">
-                          {record.change_reason || '密码变更'}
+                          {record.change_reason || t('itemDetail.passwordChange')}
                         </span>
                         <span className="text-xs text-text2">
                           {new Date(record.created_at).toLocaleString()}
@@ -312,23 +314,23 @@ export default function ItemDetail({ onEditItem }: { onEditItem: (item: any) => 
         {/* Metadata */}
         <div>
           <label className="text-sm font-medium text-text uppercase tracking-wider mb-3 block">
-            元数据
+            {t('itemModal.metadata', '元数据')}
           </label>
           <div className="bg-background rounded-lg p-4 border border-surface2 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-text2">创建时间:</span>
+              <span className="text-text2">{t('itemDetail.createdAt')}</span>
               <span className="text-text">
                 {formatDate(new Date())} {/* Replace with actual created_at */}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text2">最后修改:</span>
+              <span className="text-text2">{t('itemDetail.lastModified')}</span>
               <span className="text-text">
                 {formatDate(new Date())} {/* Replace with actual last_modified */}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text2">颜色标识:</span>
+              <span className="text-text2">{t('itemDetail.colorLabel')}</span>
               <div className="flex items-center space-x-2">
                 <div 
                   className="w-4 h-4 rounded"

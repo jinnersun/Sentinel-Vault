@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function SearchBar() {
   const { state, dispatch, searchItems } = useApp();
+  const { t } = useTranslation();
   const [localQuery, setLocalQuery] = useState(state.searchQuery);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +55,7 @@ export default function SearchBar() {
         value={localQuery}
         onChange={(e) => setLocalQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="搜索标题、备注或URL... (Ctrl+K 聚焦, Enter 搜索)"
+        placeholder={t('search.placeholder')}
         className="input pl-10 pr-20"
       />
       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
@@ -62,7 +64,7 @@ export default function SearchBar() {
             onClick={handleClear}
             className="text-xs text-text2 hover:text-error px-2 py-1 rounded hover:bg-surface2"
           >
-            清空
+            {t('search.clear')}
           </button>
         )}
         <kbd className="text-xs text-text2 bg-surface2 px-2 py-1 rounded">⌘K</kbd>

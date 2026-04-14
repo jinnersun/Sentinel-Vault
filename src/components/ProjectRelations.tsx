@@ -3,8 +3,10 @@ import api from '../lib/tauri-api';
 import { Trash2, Plus, Server, Database, Key, Copy, Eye, EyeOff, ExternalLink, Chrome } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { VaultItem, parseAssetNotes, ServerAsset, DatabaseAsset } from '../types';
+import { useTranslation } from 'react-i18next';
 
 export default function ProjectRelations() {
+  const { t } = useTranslation();
   const { state, refreshData } = useApp();
   const [linked, setLinked] = useState<VaultItem[]>([]);
   const [unlinked, setUnlinked] = useState<VaultItem[]>([]);
@@ -47,7 +49,7 @@ export default function ProjectRelations() {
 
   const handleRemove = async (credentialId: number) => {
     if (!projectId) return;
-    if (!confirm('确定要移除该关联吗？')) return;
+    if (!confirm(t('project.relations.removeConfirm'))) return;
     try {
       await api.deleteRelationByCredentialAndProject(projectId, credentialId);
       await load();
@@ -100,7 +102,7 @@ export default function ProjectRelations() {
             <button
               onClick={() => copyToClipboard(`ssh ${data?.ssh_user}@${data?.ip} -p ${data?.port || 22}`)}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制 SSH 命令"
+              title={t('project.relations.copySSH')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -124,7 +126,7 @@ export default function ProjectRelations() {
           </div>
           {data?.ssh_user && (
             <div className="flex items-center justify-between">
-              <span>用户: {data.ssh_user}</span>
+              <span>{t('project.relations.user')}: {data.ssh_user}</span>
               <button
                 onClick={() => copyToClipboard(data.ssh_user!)}
                 className="p-1 hover:bg-surface2 rounded"
@@ -134,7 +136,7 @@ export default function ProjectRelations() {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span>密码: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
+            <span>{t('project.relations.password')}: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
             <div className="flex items-center space-x-1">
               <button
                 onClick={() => toggleSecret(item.id!)}
@@ -173,7 +175,7 @@ export default function ProjectRelations() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1 hover:bg-surface2 rounded text-accent"
-                title="打开管理后台"
+                title={t('project.relations.openAdmin')}
               >
                 <ExternalLink className="w-3 h-3" />
               </a>
@@ -197,7 +199,7 @@ export default function ProjectRelations() {
             </button>
           </div>
           <div className="flex items-center justify-between">
-            <span>库: {data?.database}</span>
+            <span>{t('project.relations.database')}: {data?.database}</span>
             <button
               onClick={() => copyToClipboard(data?.database || '')}
               className="p-1 hover:bg-surface2 rounded"
@@ -207,7 +209,7 @@ export default function ProjectRelations() {
           </div>
           {data?.username && (
             <div className="flex items-center justify-between">
-              <span>用户: {data.username}</span>
+              <span>{t('project.relations.user')}: {data.username}</span>
               <button
                 onClick={() => copyToClipboard(data.username!)}
                 className="p-1 hover:bg-surface2 rounded"
@@ -217,7 +219,7 @@ export default function ProjectRelations() {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span>密码: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
+            <span>{t('project.relations.password')}: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
             <div className="flex items-center space-x-1">
               <button
                 onClick={() => toggleSecret(item.id!)}
@@ -312,7 +314,7 @@ export default function ProjectRelations() {
           )}
           {username && (
             <div className="flex items-center justify-between">
-              <span>用户: {username}</span>
+              <span>{t('project.relations.user')}: {username}</span>
               <button
                 onClick={() => copyToClipboard(username)}
                 className="p-1 hover:bg-surface2 rounded"
@@ -322,7 +324,7 @@ export default function ProjectRelations() {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span>密码: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
+            <span>{t('project.relations.password')}: {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••'}</span>
             <div className="flex items-center space-x-1">
               <button
                 onClick={() => toggleSecret(item.id!)}
@@ -347,7 +349,7 @@ export default function ProjectRelations() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-surface2 flex-shrink-0">
-        <h3 className="text-lg font-semibold mb-3">项目资源管理器</h3>
+        <h3 className="text-lg font-semibold mb-3">{t('project.relations.title')}</h3>
         
         {/* Tabs */}
         <div className="flex space-x-1">
@@ -357,7 +359,7 @@ export default function ProjectRelations() {
               activeTab === 'all' ? 'bg-accent text-white' : 'bg-surface2 hover:bg-surface'
             }`}
           >
-            全部 ({linked.length})
+            {t('project.relations.tabAll', { count: linked.length })}
           </button>
           <button
             onClick={() => setActiveTab('server')}
@@ -366,7 +368,7 @@ export default function ProjectRelations() {
             }`}
           >
             <Server className="w-3 h-3" />
-            <span>服务器 ({servers.length})</span>
+            <span>{t('project.relations.tabServers', { count: servers.length })}</span>
           </button>
           <button
             onClick={() => setActiveTab('database')}
@@ -375,7 +377,7 @@ export default function ProjectRelations() {
             }`}
           >
             <Database className="w-3 h-3" />
-            <span>数据库 ({databases.length})</span>
+            <span>{t('project.relations.tabDatabases', { count: databases.length })}</span>
           </button>
           <button
             onClick={() => setActiveTab('apikey')}
@@ -384,7 +386,7 @@ export default function ProjectRelations() {
             }`}
           >
             <Key className="w-3 h-3" />
-            <span>API ({apiKeys.length})</span>
+            <span>{t('projectRelations.apiTab', 'API')} ({apiKeys.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('chrome')}
@@ -393,7 +395,7 @@ export default function ProjectRelations() {
             }`}
           >
             <Chrome className="w-3 h-3" />
-            <span>Chrome ({chromePasswords.length})</span>
+            <span>{t('projectRelations.chromeTab', 'Chrome')} ({chromePasswords.length})</span>
           </button>
         </div>
       </div>
@@ -402,29 +404,29 @@ export default function ProjectRelations() {
       <div className="flex-1 overflow-y-auto p-4">
         {/* 添加关联 */}
         <div className="mb-4">
-          <label className="text-xs text-text2">添加资源到此项目</label>
+          <label className="text-xs text-text2">{t('project.relations.addResource')}</label>
           <div className="flex items-center space-x-2 mt-1">
             <select
               className="input text-sm py-1.5 flex-1"
               value={selectedToAdd ?? ''}
               onChange={(e) => setSelectedToAdd(Number(e.target.value))}
             >
-              <optgroup label="服务器">
+              <optgroup label={t('project.relations.servers')}>
                 {unlinked.filter(u => u.category === 'Server').map(u => (
                   <option key={u.id} value={u.id}>{u.title}</option>
                 ))}
               </optgroup>
-              <optgroup label="数据库">
+              <optgroup label={t('project.relations.databases')}>
                 {unlinked.filter(u => u.category === 'Database').map(u => (
                   <option key={u.id} value={u.id}>{u.title}</option>
                 ))}
               </optgroup>
-              <optgroup label="API Keys">
+              <optgroup label={t('projectRelations.apiKeysGroup', 'API Keys')}>
                 {unlinked.filter(u => u.category === 'API').map(u => (
                   <option key={u.id} value={u.id}>{u.title}</option>
                 ))}
               </optgroup>
-              <optgroup label="Chrome 凭证">
+              <optgroup label={t('project.relations.chromeCredentials')}>
                 {unlinked.filter(u => u.category === 'Chrome').map(u => (
                   <option key={u.id} value={u.id}>{u.title}</option>
                 ))}
@@ -441,7 +443,7 @@ export default function ProjectRelations() {
           <div className="mb-4">
             <h4 className="text-xs font-medium text-text2 uppercase mb-2 flex items-center space-x-1">
               <Server className="w-3 h-3" />
-              <span>服务器</span>
+              <span>{t('project.relations.servers')}</span>
             </h4>
             {servers.map(renderServerCard)}
           </div>
@@ -451,7 +453,7 @@ export default function ProjectRelations() {
           <div className="mb-4">
             <h4 className="text-xs font-medium text-text2 uppercase mb-2 flex items-center space-x-1">
               <Database className="w-3 h-3" />
-              <span>数据库</span>
+              <span>{t('project.relations.databases')}</span>
             </h4>
             {databases.map(renderDatabaseCard)}
           </div>
@@ -461,7 +463,7 @@ export default function ProjectRelations() {
           <div className="mb-4">
             <h4 className="text-xs font-medium text-text2 uppercase mb-2 flex items-center space-x-1">
               <Key className="w-3 h-3" />
-              <span>API Keys</span>
+              <span>{t('projectRelations.apiKeysTitle', 'API Keys')}</span>
             </h4>
             {apiKeys.map(renderApiKeyCard)}
           </div>
@@ -471,7 +473,7 @@ export default function ProjectRelations() {
           <div className="mb-4">
             <h4 className="text-xs font-medium text-text2 uppercase mb-2 flex items-center space-x-1">
               <Chrome className="w-3 h-3" />
-              <span>Chrome 凭证</span>
+              <span>{t('project.relations.chromeCredentials')}</span>
             </h4>
             {chromePasswords.map(renderChromeCard)}
           </div>
@@ -479,7 +481,7 @@ export default function ProjectRelations() {
 
         {linked.length === 0 && (
           <div className="text-text2 text-sm text-center py-8">
-            此项目尚未关联任何资源。
+            {t('project.relations.noResources')}
           </div>
         )}
       </div>

@@ -4,9 +4,11 @@ import { FolderPlus, Settings, Download, Upload, Edit2, Trash2, Key, Server, Shi
 import type { Project } from '../types';
 import api from '../lib/tauri-api';
 import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
+import { useTranslation } from 'react-i18next';
 
 export default function Sidebar() {
   const { state, dispatch, refreshData } = useApp();
+  const { t } = useTranslation();
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -36,7 +38,7 @@ export default function Sidebar() {
   // 检查未保存更改并执行操作
   const checkUnsavedAndExecute = async (action: () => void) => {
     if (state.hasUnsavedChanges) {
-      const result = await showUnsavedDialog('您有未保存的更改');
+      const result = await showUnsavedDialog(t('sidebar.unsavedChanges'));
       if (result === 'cancel') return;
       if (result === 'save') {
         // 用户选择保存，执行保存回调
@@ -45,7 +47,7 @@ export default function Sidebar() {
             await state.saveCallback();
           } catch (error) {
             console.error('保存失败:', error);
-            alert('保存失败，无法跳转');
+            alert(t('sidebar.saveFailed'));
             return;
           }
         }
@@ -59,7 +61,7 @@ export default function Sidebar() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) {
-      alert('请输入项目名称');
+      alert(t('sidebar.enterProjectName'));
       return;
     }
 
@@ -96,7 +98,7 @@ export default function Sidebar() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('Failed to create project:', error);
-      alert(`创建项目失败: ${errorMsg}`);
+      alert(t('sidebar.createFailed', { error: errorMsg }));
     }
   };
 
@@ -124,7 +126,7 @@ export default function Sidebar() {
       setEditName('');
     } catch (error) {
       console.error('Failed to update project:', error);
-      alert('更新项目失败');
+      alert(t('sidebar.updateFailed'));
     }
   };
 
@@ -142,7 +144,7 @@ export default function Sidebar() {
     // 2. 使用异步确认对话框，确保UI不会提前更新
     const confirmed = await new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        const result = window.confirm(`确定要删除项目 "${project.name}" 吗？\n注意：该项目下的所有关联将被移除，但凭证不会被删除。`);
+        const result = window.confirm(t('sidebar.deleteProjectConfirm', { name: project.name }));
         resolve(result);
       }, 0);
     });
@@ -165,10 +167,10 @@ export default function Sidebar() {
         dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
       }
       
-      console.log(`成功删除项目 "${project.name}"`);
+      console.log(t('sidebar.deleteSuccess', { name: project.name }));
     } catch (error) {
       console.error('删除失败:', error);
-      alert(`删除 "${project.name}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      alert(t('sidebar.deleteFailed', { name: project.name, error: error instanceof Error ? error.message : t('common.unknownError') }));
       // 失败时不需要调用 refreshData，因为我们从未修改本地状态
     } finally {
       setDeletingProjectId(null);
@@ -180,11 +182,11 @@ export default function Sidebar() {
       {/* 模块 1: 项目 (占据大部分空间并可滚动) */}
       <div className="flex-1 flex flex-col min-h-0 border-b border-surface2">
         <div className="p-4 flex items-center justify-between flex-shrink-0">
-          <h2 className="text-xs font-bold text-text2 uppercase">我的项目</h2>
+          <h2 className="text-xs font-bold text-text2 uppercase">{t('sidebar.myProjects')}</h2>
           <button
             onClick={() => setShowNewProject(true)}
             className="p-1 hover:bg-surface2 rounded transition-colors"
-            title="新建项目"
+            title={t('sidebar.newProject')}
           >
             <FolderPlus className="w-4 h-4 text-text2" />
           </button>
@@ -206,7 +208,7 @@ export default function Sidebar() {
         >
           <div className="w-4 h-4 bg-accent rounded"></div>
           <span className="text-sm font-medium">
-            全部条目 ({state.vaultItems.filter(i => i.category !== 'Chrome' && i.category !== 'API').length})
+            {t('vault.allItems')} ({state.vaultItems.filter(i => i.category !== 'Chrome' && i.category !== 'API').length})
           </span>
         </div>
 
@@ -241,7 +243,7 @@ export default function Sidebar() {
                   handleEditProject(project);
                 }}
                 className="p-1 hover:bg-surface rounded"
-                title="编辑项目"
+                title={t('sidebar.editProject')}
               >
                 <Edit2 className="w-3 h-3 text-text2" />
               </button>
@@ -250,7 +252,7 @@ export default function Sidebar() {
                   handleDeleteProject(e, project);
                 }}
                 className="p-1 hover:bg-surface rounded"
-                title="删除项目"
+                title={t('common.delete')}
               >
                 <Trash2 className="w-3 h-3 text-error" />
               </button>
@@ -279,12 +281,12 @@ export default function Sidebar() {
               }}
             >
               <Download className="w-4 h-4" />
-              <span className="text-sm font-semibold">Chrome 凭证</span>
+              <span className="text-sm font-semibold">{t('sidebar.chromeCredentials')}</span>
             </button>
             <button
               onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'imports' }))}
               className="p-2 rounded-lg hover:bg-surface2 text-text2"
-              title="从 CSV 导入"
+              title={t('sidebar.importFromCsv')}
             >
               <Upload className="w-4 h-4" />
             </button>
@@ -306,7 +308,7 @@ export default function Sidebar() {
             }}
           >
             <Server className="w-4 h-4" />
-            <span className="text-sm font-semibold">基础设施</span>
+            <span className="text-sm font-semibold">{t('sidebar.infrastructure')}</span>
           </button>
         </div>
 
@@ -326,7 +328,7 @@ export default function Sidebar() {
             }}
           >
             <Key className="w-4 h-4" />
-            <span className="text-sm font-semibold">API Keys 仓库</span>
+            <span className="text-sm font-semibold">{t('sidebar.apiKeysRepo')}</span>
           </button>
         </div>
 
@@ -345,7 +347,7 @@ export default function Sidebar() {
             }}
           >
             <Globe className="w-4 h-4" />
-            <span className="text-sm font-semibold">域名管理</span>
+            <span className="text-sm font-semibold">{t('sidebar.domainManagement')}</span>
           </button>
         </div>
 
@@ -364,7 +366,7 @@ export default function Sidebar() {
             }}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span className="text-sm font-semibold">SSL证书</span>
+            <span className="text-sm font-semibold">{t('sidebar.sslCertificates')}</span>
           </button>
         </div>
 
@@ -384,7 +386,7 @@ export default function Sidebar() {
           >
             <div className="flex items-center space-x-2">
               <Shield className="w-4 h-4" />
-              <span className="text-sm font-semibold">安全中心</span>
+              <span className="text-sm font-semibold">{t('sidebar.securityCenter')}</span>
             </div>
             {alertCount > 0 && (
               <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
@@ -405,7 +407,7 @@ export default function Sidebar() {
           onClick={() => checkUnsavedAndExecute(() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'settings' }))}
         >
           <Settings className="w-4 h-4 text-text2" />
-          <span className="text-sm text-text2">设置</span>
+          <span className="text-sm text-text2">{t('nav.settings')}</span>
         </button>
       </div>
 
@@ -413,19 +415,19 @@ export default function Sidebar() {
       {showNewProject && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-80">
-            <h3 className="text-lg font-semibold text-text mb-4">新建项目</h3>
+            <h3 className="text-lg font-semibold text-text mb-4">{t('sidebar.newProject')}</h3>
             <form onSubmit={handleCreateProject}>
               <input
                 type="text"
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 className="input mb-4"
-                placeholder="项目名称"
+                placeholder={t('sidebar.projectNamePlaceholder')}
                 autoFocus
               />
               <div className="flex space-x-2">
                 <button type="submit" className="btn flex-1">
-                  创建
+                  {t('common.create')}
                 </button>
                 <button
                   type="button"
@@ -435,7 +437,7 @@ export default function Sidebar() {
                   }}
                   className="btn-secondary flex-1"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -447,19 +449,19 @@ export default function Sidebar() {
       {editingProject && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-80">
-            <h3 className="text-lg font-semibold text-text mb-4">编辑项目</h3>
+            <h3 className="text-lg font-semibold text-text mb-4">{t('sidebar.editProjectTitle')}</h3>
             <form onSubmit={handleUpdateProject}>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 className="input mb-4"
-                placeholder="项目名称"
+                placeholder={t('sidebar.projectNamePlaceholder')}
                 autoFocus
               />
               <div className="flex space-x-2">
                 <button type="submit" className="btn flex-1">
-                  保存
+                  {t('common.save')}
                 </button>
                 <button
                   type="button"
@@ -469,7 +471,7 @@ export default function Sidebar() {
                   }}
                   className="btn-secondary flex-1"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

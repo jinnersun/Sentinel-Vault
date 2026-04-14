@@ -3,6 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import { X } from 'lucide-react';
 import api from '../lib/tauri-api';
 import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
+import { useTranslation } from 'react-i18next';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface ItemModalProps {
 }
 
 export default function ItemModal({ isOpen, onClose, item, defaultCategory }: ItemModalProps) {
+  const { t } = useTranslation();
   const { state, refreshData } = useApp();
   const [formData, setFormData] = useState({
     title: '',
@@ -127,7 +129,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
       if (navigator.clipboard) {
         const text = await navigator.clipboard.readText();
         if (text && text.length > 20 && /[A-Za-z0-9+_\-]/.test(text)) {
-          if (window.confirm('检测到剪贴板中可能有API Key，是否自动填入？')) {
+          if (window.confirm(t('itemModal.pasteConfirm'))) {
             setFormData(prev => ({ ...prev, secret: text }));
           }
         }
@@ -143,15 +145,15 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
     
     // Validate required fields
     if (!formData.title.trim()) {
-      setError('请输入标题');
+      setError(t('itemModal.errors.titleRequired'));
       return;
     }
     if (!formData.secret.trim()) {
-      setError(formData.category === 'Chrome' ? '请输入密码' : '请输入API Key');
+      setError(formData.category === 'Chrome' ? t('itemModal.errors.secretRequired', { type: '密码' }) : t('itemModal.errors.secretRequired', { type: 'API Key' }));
       return;
     }
     if (formData.category === 'Chrome' && !formData.url.trim()) {
-      setError('请输入网站 URL');
+      setError(t('itemModal.errors.urlRequired'));
       return;
     }
 
@@ -161,7 +163,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
       // 构建 notes 字段
       let notes = formData.notes?.trim() || '';
       if (formData.category === 'Chrome' && chromeUsername) {
-        notes = `用户名: ${chromeUsername}\n${notes}`;
+        notes = `${t('itemModal.chromeUsername')}: ${chromeUsername}\n${notes}`;
       }
 
       const itemData = {
@@ -187,7 +189,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           console.log('Item updated successfully');
         } catch (updateError) {
           console.error('Update error:', updateError);
-          setError(`更新失败: ${String(updateError)}`);
+          setError(t('itemModal.errors.updateFailed', { error: String(updateError) }));
           return;
         }
       } else {
@@ -197,7 +199,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           console.log('Item created successfully with ID:', newItemId);
         } catch (createError) {
           console.error('Create error:', createError);
-          setError(`创建失败: ${String(createError)}`);
+          setError(t('itemModal.errors.createFailed', { error: String(createError) }));
           return;
         }
       }
@@ -215,7 +217,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
       onClose();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      setError(`操作失败: ${errorMsg}`);
+      setError(t('itemModal.errors.operationFailed', { error: errorMsg }));
       console.error('Full error:', error);
     } finally {
       setIsLoading(false);
@@ -228,7 +230,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
 
   const handleClose = async () => {
     if (isDirty) {
-      const action = await showUnsavedDialog('您有未保存的条目更改');
+      const action = await showUnsavedDialog(t('itemModal.unsavedChanges'));
       if (action === 'cancel') return;
       if (action === 'save') {
         // 触发保存
@@ -252,10 +254,10 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
         <div className="flex items-center justify-between p-6 border-b border-surface2">
           <div className="flex items-center space-x-2">
             <h2 className="text-xl font-bold text-text">
-              {item ? '编辑条目' : '新建条目'}
+              {item ? t('itemModal.title.edit') : t('itemModal.title.new')}
             </h2>
             {isDirty && (
-              <span className="text-sm text-warning">* 有未保存的更改</span>
+              <span className="text-sm text-warning">{t('itemModal.unsavedIndicator')}</span>
             )}
           </div>
           <button
@@ -277,14 +279,14 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              标题 *
+              {t('itemModal.form.title')} *
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               className="input"
-              placeholder="例如：OpenAI API Key"
+              placeholder={t('itemModal.form.titlePlaceholder')}
               required
             />
           </div>
@@ -295,7 +297,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               {/* URL - Chrome 必填 */}
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  网站 URL *
+                  {t('itemModal.form.websiteUrl')} *
                 </label>
                 <input
                   type="url"
@@ -310,7 +312,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               {/* 用户名 - Chrome */}
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  用户名
+                  {t('itemModal.form.username')}
                 </label>
                 <input
                   type="text"
@@ -324,14 +326,14 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               {/* 密码 - Chrome */}
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  密码 *
+                  {t('itemModal.form.password')} *
                 </label>
                 <input
                   type="password"
                   value={formData.secret}
                   onChange={(e) => handleInputChange('secret', e.target.value)}
                   className="input"
-                  placeholder="输入密码..."
+                  placeholder={t('itemModal.form.passwordPlaceholder')}
                   required
                 />
               </div>
@@ -341,13 +343,13 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               {/* Secret - 普通 API Key */}
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  API Key *
+                  {t('itemModal.form.apiKey')} *
                 </label>
                 <textarea
                   value={formData.secret}
                   onChange={(e) => handleInputChange('secret', e.target.value)}
                   className="input min-h-[80px]"
-                  placeholder="输入您的API Key..."
+                  placeholder={t('itemModal.form.apiKeyPlaceholder')}
                   required
                 />
               </div>
@@ -355,7 +357,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               {/* URL - 普通 */}
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  URL
+                  {t('itemModal.form.url')}
                 </label>
                 <input
                   type="url"
@@ -371,7 +373,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           {/* Category */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              分类
+              {t('itemModal.form.category')}
             </label>
             <select
               value={formData.category}
@@ -379,23 +381,23 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               className="input"
             >
               <option value="API">API</option>
-              <option value="Database">数据库</option>
-              <option value="Service">服务</option>
-              <option value="Other">其他</option>
+              <option value="Database">{t('itemModal.categories.database')}</option>
+              <option value="Service">{t('itemModal.categories.service')}</option>
+              <option value="Other">{t('itemModal.categories.other')}</option>
             </select>
           </div>
 
           {/* Project */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              项目
+              {t('itemModal.form.project')}
             </label>
             <select
               value={formData.project_id || ''}
               onChange={(e) => handleInputChange('project_id', e.target.value ? Number(e.target.value) : null)}
               className="input"
             >
-              <option value="">无项目</option>
+              <option value="">{t('itemModal.form.noProject')}</option>
               {state.projects.map(project => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -407,7 +409,7 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           {/* Color */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              颜色标识
+              {t('itemModal.form.colorIndicator')}
             </label>
             <div className="flex items-center space-x-2">
               <input
@@ -429,13 +431,13 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              备注
+              {t('itemModal.form.notes')}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
               className="input min-h-[120px]"
-              placeholder="添加备注信息..."
+              placeholder={t('itemModal.form.notesPlaceholder')}
             />
           </div>
 
@@ -446,14 +448,14 @@ export default function ItemModal({ isOpen, onClose, item, defaultCategory }: It
               disabled={isLoading}
               className="btn flex-1 disabled:opacity-50"
             >
-              {isLoading ? '保存中...' : item ? '更新' : '创建'}
+              {isLoading ? t('itemModal.form.saving') : item ? t('itemModal.form.update') : t('itemModal.form.create')}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="btn-secondary flex-1"
             >
-              取消
+              {t('itemModal.form.cancel')}
             </button>
           </div>
         </form>

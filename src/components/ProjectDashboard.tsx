@@ -3,6 +3,7 @@ import type { Project, ProjectUrl } from '../types';
 import api from '../lib/tauri-api';
 import { useApp } from '../contexts/AppContext';
 import { showUnsavedDialog } from '../hooks/useUnsavedChanges';
+import { useTranslation } from 'react-i18next';
 import { 
   Globe, 
   Github, 
@@ -25,6 +26,7 @@ interface ProjectDashboardProps {
 }
 
 export default function ProjectDashboard({ project }: ProjectDashboardProps) {
+  const { t } = useTranslation();
   const { dispatch } = useApp();
   const [readmeContent, setReadmeContent] = useState<string>('');
   const [loadingReadme, setLoadingReadme] = useState(false);
@@ -82,7 +84,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
       const content = await api.readProjectReadme(project.readme_path);
       setReadmeContent(content);
     } catch (error) {
-      setReadmeError('无法加载 README 文件');
+      setReadmeError(t('project.dashboard.readmeLoadFailed'));
       console.error('Failed to load readme:', error);
     } finally {
       setLoadingReadme(false);
@@ -100,9 +102,9 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active': return '开发中';
-      case 'maintenance': return '维护中';
-      case 'inactive': return '已停用';
+      case 'active': return t('project.dashboard.status.active');
+      case 'maintenance': return t('project.dashboard.status.maintenance');
+      case 'inactive': return t('project.dashboard.status.inactive');
       default: return status;
     }
   };
@@ -136,7 +138,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to save project:', error);
-      alert('保存失败');
+      alert(t('project.dashboard.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -144,7 +146,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
 
   const handleCancel = async () => {
     if (isDirty) {
-      const action = await showUnsavedDialog('您有未保存的项目更改');
+      const action = await showUnsavedDialog(t('project.dashboard.unsavedChanges'));
       if (action === 'cancel') return;
       if (action === 'save') {
         await handleSave();
@@ -182,10 +184,10 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
     return (
       <div className="h-full overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">编辑项目</h2>
+          <h2 className="text-xl font-bold">{t('project.dashboard.editProject')}</h2>
           <div className="flex items-center space-x-2">
             {isDirty && (
-              <span className="text-sm text-warning mr-2">* 有未保存的更改</span>
+              <span className="text-sm text-warning mr-2">{t('project.dashboard.unsavedIndicator')}</span>
             )}
             <button
               onClick={handleCancel}
@@ -193,7 +195,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
               disabled={saving}
             >
               <X className="w-4 h-4 mr-1" />
-              取消
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSave}
@@ -201,7 +203,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
               disabled={saving}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
-              保存
+              {t('common.save')}
             </button>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
         <div className="space-y-4 max-w-2xl">
           {/* 项目名称 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-1">项目名称</label>
+            <label className="block text-sm font-medium text-text2 mb-1">{t('project.dashboard.projectName')}</label>
             <input
               type="text"
               value={editForm.name}
@@ -220,57 +222,57 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
 
           {/* 项目状态 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-1">项目状态</label>
+            <label className="block text-sm font-medium text-text2 mb-1">{t('project.dashboard.projectStatus')}</label>
             <select
               value={editForm.status}
               onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
             >
-              <option value="active">开发中</option>
-              <option value="maintenance">维护中</option>
-              <option value="inactive">已停用</option>
+              <option value="active">{t('project.dashboard.status.active')}</option>
+              <option value="maintenance">{t('project.dashboard.status.maintenance')}</option>
+              <option value="inactive">{t('project.dashboard.status.inactive')}</option>
             </select>
           </div>
 
           {/* 项目描述 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-1">项目描述</label>
+            <label className="block text-sm font-medium text-text2 mb-1">{t('project.dashboard.projectDescription')}</label>
             <textarea
               value={editForm.description}
               onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none"
-              placeholder="描述项目的业务逻辑和目标..."
+              placeholder={t('project.dashboard.projectDescriptionPlaceholder')}
             />
           </div>
 
           {/* 架构描述 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-1">架构描述</label>
+            <label className="block text-sm font-medium text-text2 mb-1">{t('project.dashboard.architectureDescription')}</label>
             <textarea
               value={editForm.arch_desc}
               onChange={(e) => setEditForm(prev => ({ ...prev, arch_desc: e.target.value }))}
               rows={4}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none"
-              placeholder="描述技术栈、逻辑流或部署拓扑..."
+              placeholder={t('project.dashboard.architectureDescriptionPlaceholder')}
             />
           </div>
 
           {/* README 路径 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-1">README 文件路径</label>
+            <label className="block text-sm font-medium text-text2 mb-1">{t('project.dashboard.readmePath')}</label>
             <input
               type="text"
               value={editForm.readme_path}
               onChange={(e) => setEditForm(prev => ({ ...prev, readme_path: e.target.value }))}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-              placeholder="例如: /path/to/README.md"
+              placeholder={t('project.dashboard.readmePathPlaceholder')}
             />
           </div>
 
           {/* URL 列表 */}
           <div>
-            <label className="block text-sm font-medium text-text2 mb-2">相关链接</label>
+            <label className="block text-sm font-medium text-text2 mb-2">{t('project.dashboard.relatedLinks')}</label>
             <div className="space-y-2">
               {editForm.urls.map((url, index) => (
                 <div key={index} className="flex items-center space-x-2">
@@ -278,7 +280,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
                     type="text"
                     value={url.name}
                     onChange={(e) => updateUrl(index, 'name', e.target.value)}
-                    placeholder="名称"
+                    placeholder={t('project.dashboard.linkName')}
                     className="flex-1 px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent text-sm"
                   />
                   <input
@@ -301,7 +303,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
                 className="flex items-center space-x-1 text-sm text-accent hover:text-accent2"
               >
                 <Plus className="w-4 h-4" />
-                <span>添加链接</span>
+                <span>{t('project.dashboard.addLink')}</span>
               </button>
             </div>
           </div>
@@ -357,7 +359,7 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
             className="btn btn-sm"
           >
             <Edit2 className="w-4 h-4 mr-1" />
-            编辑
+            {t('common.edit')}
           </button>
         </div>
       </div>
@@ -368,10 +370,10 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
         <div className="bg-surface rounded-lg p-4">
           <h2 className="text-sm font-medium text-text2 uppercase tracking-wider mb-3 flex items-center">
             <FileText className="w-4 h-4 mr-2" />
-            项目描述
+            {t('project.dashboard.projectDescriptionLabel')}
           </h2>
           <div className="text-text whitespace-pre-wrap min-h-[100px]">
-            {project.description || '暂无项目描述'}
+            {project.description || t('project.dashboard.noDescription')}
           </div>
         </div>
 
@@ -379,10 +381,10 @@ export default function ProjectDashboard({ project }: ProjectDashboardProps) {
         <div className="bg-surface rounded-lg p-4">
           <h2 className="text-sm font-medium text-text2 uppercase tracking-wider mb-3 flex items-center">
             <Layout className="w-4 h-4 mr-2" />
-            架构描述
+            {t('project.dashboard.architectureDescriptionLabel')}
           </h2>
           <div className="text-text whitespace-pre-wrap min-h-[100px]">
-            {project.arch_desc || '暂无架构描述'}
+            {project.arch_desc || t('project.dashboard.noArchitecture')}
           </div>
         </div>
       </div>

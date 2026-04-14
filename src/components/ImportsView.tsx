@@ -3,6 +3,7 @@ import api from '../lib/tauri-api';
 import { useApp } from '../contexts/AppContext';
 import { CheckCircle, Upload, FileText, Loader2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { open } from '@tauri-apps/api/dialog';
+import { useTranslation } from 'react-i18next';
 
 interface ImportRecord {
   id: number;
@@ -29,6 +30,7 @@ interface Decisions {
 }
 
 export default function ImportsView() {
+  const { t } = useTranslation();
   const { state, refreshData } = useApp();
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,7 @@ export default function ImportsView() {
       }
     } catch (error) {
       console.error('Failed to parse CSV:', error);
-      alert('解析失败: ' + (error instanceof Error ? error.message : String(error)));
+      alert(t('imports.parseFailed', { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setLoading(false);
     }
@@ -103,7 +105,7 @@ export default function ImportsView() {
     
     const pendingConflicts = preview.conflict_items.filter(item => !decisions[item.id]);
     if (pendingConflicts.length > 0) {
-      alert(`还有 ${pendingConflicts.length} 条冲突记录未处理，请选择"更新"或"跳过"`);
+      alert(t('imports.conflictsPending', { count: pendingConflicts.length }));
       return;
     }
 
@@ -132,7 +134,7 @@ export default function ImportsView() {
       }
 
       if (decisionList.length === 0) {
-        alert('没有选择任何记录导入');
+        alert(t('imports.noSelection'));
         setProcessing(false);
         return;
       }
@@ -150,18 +152,18 @@ export default function ImportsView() {
         setResult(res);
         setPreview(null);
         setDecisions({});
-        alert(`导入完成！新增: ${res.imported}, 更新: ${res.updated}, 跳过: ${res.skipped}`);
+        alert(t('imports.success', { imported: res.imported, updated: res.updated, skipped: res.skipped }));
       }
     } catch (error) {
       console.error('Failed to process import:', error);
-      alert('导入失败: ' + (error instanceof Error ? error.message : String(error)));
+      alert(t('imports.failed', { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setProcessing(false);
     }
   };
 
   const getDomainName = (url: string | null) => {
-    if (!url) return '未知网站';
+    if (!url) return t('imports.unknownWebsite');
     try {
       const hostname = new URL(url).hostname.replace(/^www\./, '');
       return hostname;
@@ -180,26 +182,26 @@ export default function ImportsView() {
         <div className="max-w-2xl mx-auto">
           <div className="bg-green-500/10 border border-green-500 rounded-lg p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">导入完成</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('imports.completed')}</h2>
             <div className="grid grid-cols-3 gap-4 mt-4">
               <div className="bg-surface rounded-lg p-3">
                 <div className="text-2xl font-bold text-green-500">{result.imported}</div>
-                <div className="text-sm text-text2">新增</div>
+                <div className="text-sm text-text2">{t('imports.stats.new')}</div>
               </div>
               <div className="bg-surface rounded-lg p-3">
                 <div className="text-2xl font-bold text-blue-500">{result.updated}</div>
-                <div className="text-sm text-text2">更新</div>
+                <div className="text-sm text-text2">{t('imports.stats.updated')}</div>
               </div>
               <div className="bg-surface rounded-lg p-3">
                 <div className="text-2xl font-bold text-gray-500">{result.skipped}</div>
-                <div className="text-sm text-text2">跳过</div>
+                <div className="text-sm text-text2">{t('imports.stats.skipped')}</div>
               </div>
             </div>
             <button
               onClick={() => setResult(null)}
               className="btn mt-6"
             >
-              继续导入
+              {t('imports.continueImport')}
             </button>
           </div>
         </div>
@@ -210,7 +212,7 @@ export default function ImportsView() {
   return (
     <div className="p-6 h-full overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Chrome 导入决策中心</h2>
+        <h2 className="text-xl font-semibold">{t('imports.title')}</h2>
         <button
           onClick={handleSelectFile}
           className="btn btn-secondary flex items-center space-x-2"
@@ -221,7 +223,7 @@ export default function ImportsView() {
           ) : (
             <Upload className="w-4 h-4" />
           )}
-          <span>{loading ? '解析中...' : '选择 CSV 文件'}</span>
+          <span>{loading ? t('imports.parsing') : t('imports.selectCsv')}</span>
         </button>
       </div>
 
@@ -229,25 +231,25 @@ export default function ImportsView() {
         <div className="max-w-2xl mx-auto mt-12">
           <div className="bg-surface border border-surface2 rounded-lg p-8 text-center">
             <div className="text-6xl mb-4">📥</div>
-            <h3 className="text-lg font-medium mb-2">从 Chrome 导入密码</h3>
-            <p className="text-text2 mb-6">选择 Chrome 导出的 CSV 文件，系统将自动对比并展示差异</p>
-            
+            <h3 className="text-lg font-medium mb-2">{t('imports.importFromChrome')}</h3>
+            <p className="text-text2 mb-6">{t('imports.importDesc')}</p>
+                      
             {/* 显示现有 Chrome 凭证数量 */}
             <div className="bg-background rounded-lg p-4 mb-6">
               <div className="text-3xl font-bold text-blue-500">{existingChromeCount}</div>
-              <div className="text-sm text-text2">现有 Chrome 凭证</div>
+              <div className="text-sm text-text2">{t('imports.existingChromeCredentials')}</div>
             </div>
-            
+                      
             <div className="bg-background rounded-lg p-4 text-left text-sm text-text2">
               <h4 className="font-medium text-text mb-3 flex items-center">
                 <FileText className="w-4 h-4 mr-2" />
-                操作步骤
+                {t('imports.steps.title')}
               </h4>
               <ol className="space-y-2 list-decimal list-inside">
-                <li>打开 Chrome 设置 → 自动填充 → 密码管理器</li>
-                <li>点击设置图标 → 导出密码</li>
-                <li>保存 CSV 文件</li>
-                <li>点击上方"选择 CSV 文件"按钮</li>
+                <li>{t('imports.steps.step1')}</li>
+                <li>{t('imports.steps.step2')}</li>
+                <li>{t('imports.steps.step3')}</li>
+                <li>{t('imports.steps.step4')}</li>
               </ol>
             </div>
           </div>
@@ -260,23 +262,23 @@ export default function ImportsView() {
               <div className="flex items-center space-x-6">
                 <div className="text-blue-500">
                   <span className="text-2xl font-bold">{existingChromeCount}</span>
-                  <span className="ml-1">现有</span>
+                  <span className="ml-1">{t('imports.stats.existing')}</span>
                 </div>
                 <div>
                   <span className="text-2xl font-bold">{preview.total_count}</span>
-                  <span className="text-text2 ml-1">本次导入</span>
+                  <span className="text-text2 ml-1">{t('imports.stats.thisImport')}</span>
                 </div>
                 <div className="text-green-500">
                   <span className="text-2xl font-bold">{preview.new_items.length}</span>
-                  <span className="ml-1">新增</span>
+                  <span className="ml-1">{t('imports.stats.new')}</span>
                 </div>
                 <div className="text-yellow-500">
                   <span className="text-2xl font-bold">{preview.conflict_items.length}</span>
-                  <span className="ml-1">冲突</span>
+                  <span className="ml-1">{t('imports.stats.conflicts')}</span>
                 </div>
                 <div className="text-gray-500">
                   <span className="text-2xl font-bold">{preview.identical_count}</span>
-                  <span className="ml-1">相同(已跳过)</span>
+                  <span className="ml-1">{t('imports.stats.identical')}</span>
                 </div>
               </div>
               <button
@@ -287,10 +289,10 @@ export default function ImportsView() {
                 {processing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    处理中...
+                    {t('imports.processing')}
                   </>
                 ) : (
-                  '确认导入'
+                  t('imports.confirmImport')
                 )}
               </button>
             </div>
@@ -305,21 +307,21 @@ export default function ImportsView() {
               >
                 <div className="flex items-center space-x-2">
                   <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  <h3 className="font-medium">冲突项 ({preview.conflict_items.length})</h3>
-                  <span className="text-sm text-text2">密码与现有记录不同</span>
+                  <h3 className="font-medium">{t('imports.conflictItems', { count: preview.conflict_items.length })}</h3>
+                  <span className="text-sm text-text2">{t('imports.conflictDesc')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); setAllConflict('update'); }}
                     className="text-xs btn btn-sm"
                   >
-                    全部更新
+                    {t('imports.updateAll')}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setAllConflict('skip'); }}
                     className="text-xs btn-secondary btn-sm"
                   >
-                    全部跳过
+                    {t('imports.skipAll')}
                   </button>
                   {showConflictItems ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </div>
@@ -332,14 +334,14 @@ export default function ImportsView() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="font-medium">{getDomainName(item.origin_url)}</div>
-                          <div className="text-sm text-text2">{item.username || '无用户名'}</div>
+                          <div className="text-sm text-text2">{item.username || t('imports.noUsername')}</div>
                           <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                             <div className="bg-background rounded p-2">
-                              <div className="text-text2 text-xs">现有密码</div>
+                              <div className="text-text2 text-xs">{t('imports.existingPassword')}</div>
                               <div className="font-mono">{maskPassword(item.existing_password || '')}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-yellow-500/30">
-                              <div className="text-text2 text-xs">导入密码</div>
+                              <div className="text-text2 text-xs">{t('imports.importPassword')}</div>
                               <div className="font-mono">{maskPassword(item.password)}</div>
                             </div>
                           </div>
@@ -349,13 +351,13 @@ export default function ImportsView() {
                             onClick={() => setDecision(item.id, 'update')}
                             className={`btn btn-sm ${decisions[item.id] === 'update' ? 'bg-yellow-500 text-black' : ''}`}
                           >
-                            {decisions[item.id] === 'update' ? '✓ 更新' : '更新并归档'}
+                            {decisions[item.id] === 'update' ? `✓ ${t('imports.update')}` : t('imports.updateAndArchive')}
                           </button>
                           <button
                             onClick={() => setDecision(item.id, 'skip')}
                             className={`btn-secondary btn-sm ${decisions[item.id] === 'skip' ? 'bg-gray-500 text-white' : ''}`}
                           >
-                            {decisions[item.id] === 'skip' ? '✓ 跳过' : '跳过'}
+                            {decisions[item.id] === 'skip' ? `✓ ${t('imports.skip')}` : t('imports.skip')}
                           </button>
                         </div>
                       </div>
@@ -375,21 +377,21 @@ export default function ImportsView() {
               >
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <h3 className="font-medium">新增项 ({preview.new_items.length})</h3>
-                  <span className="text-sm text-text2">库中不存在的记录</span>
+                  <h3 className="font-medium">{t('imports.newItems', { count: preview.new_items.length })}</h3>
+                  <span className="text-sm text-text2">{t('imports.newItemsDesc')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); setAllNew('import'); }}
                     className="text-xs btn btn-sm"
                   >
-                    全部导入
+                    {t('imports.importAll')}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setAllNew('skip'); }}
                     className="text-xs btn-secondary btn-sm"
                   >
-                    全部跳过
+                    {t('imports.skipAll')}
                   </button>
                   {showNewItems ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </div>
@@ -401,7 +403,7 @@ export default function ImportsView() {
                     <div key={item.id} className="p-4 flex items-center justify-between">
                       <div>
                         <div className="font-medium">{getDomainName(item.origin_url)}</div>
-                        <div className="text-sm text-text2">{item.username || '无用户名'}</div>
+                        <div className="text-sm text-text2">{item.username || t('imports.noUsername')}</div>
                         <div className="text-sm font-mono mt-1">{maskPassword(item.password)}</div>
                       </div>
                       <div className="flex flex-col space-y-2">
@@ -410,14 +412,14 @@ export default function ImportsView() {
                           disabled={processing || decisions[item.id] === 'import'}
                           className={`btn btn-sm ${decisions[item.id] === 'import' ? 'bg-green-500 text-white cursor-not-allowed' : ''}`}
                         >
-                          {processing ? '处理中...' : (decisions[item.id] === 'import' ? '✓ 已导入' : '导入')}
+                          {processing ? t('imports.processing') : (decisions[item.id] === 'import' ? `✓ ${t('imports.imported')}` : t('imports.import'))}
                         </button>
                         <button
                           onClick={() => setDecision(item.id, 'skip')}
                           disabled={decisions[item.id] === 'import'}
                           className={`btn-secondary btn-sm ${decisions[item.id] === 'skip' ? 'bg-gray-500 text-white' : ''} ${decisions[item.id] === 'import' ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          {decisions[item.id] === 'skip' ? '✓ 跳过' : '跳过'}
+                          {decisions[item.id] === 'skip' ? `✓ ${t('imports.skip')}` : t('imports.skip')}
                         </button>
                       </div>
                     </div>

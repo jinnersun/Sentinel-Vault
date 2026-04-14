@@ -4,6 +4,7 @@ import { parseAssetNotes, type ServerAsset, type DatabaseAsset } from '../types'
 import { useState, useEffect } from 'react';
 import api from '../lib/tauri-api';
 import InfrastructureModal from './InfrastructureModal';
+import { useTranslation } from 'react-i18next';
 
 // 数据库连接字符串模板
 const CONNECTION_TEMPLATES: Record<string, string> = {
@@ -33,6 +34,7 @@ interface ServerRelations {
 }
 
 export default function InfrastructureView() {
+  const { t } = useTranslation();
   const { state, dispatch } = useApp();
   const [showSecrets, setShowSecrets] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState<'all' | 'server' | 'database'>('all');
@@ -146,17 +148,20 @@ export default function InfrastructureView() {
     if (item.category === 'Server' && item.id) {
       const relations = await checkServerRelations(item.id);
       if (relations.domains.length > 0) {
-        const confirmMsg = `服务器 "${item.title}" 关联了以下域名：\n${relations.domains.join(', ')}\n\n删除服务器将同时解除这些关联关系。是否继续？`;
+        const confirmMsg = t('infrastructureView.deleteServerWithRelations', {
+          title: item.title,
+          domains: relations.domains.join(', ')
+        });
         if (!window.confirm(confirmMsg)) {
           return;
         }
       } else {
-        if (!window.confirm(`确定要删除服务器 "${item.title}" 吗？`)) {
+        if (!window.confirm(t('infrastructureView.deleteServerConfirm', { title: item.title }))) {
           return;
         }
       }
     } else {
-      if (!window.confirm(`确定要删除 "${item.title}" 吗？`)) {
+      if (!window.confirm(t('infrastructureView.deleteConfirm', { title: item.title }))) {
         return;
       }
     }
@@ -172,8 +177,11 @@ export default function InfrastructureView() {
       
       console.log(`成功删除 "${item.title}"`);
     } catch (error) {
-      console.error('删除失败:', error);
-      alert(`删除 "${item.title}" 失败，请重试\n${error instanceof Error ? error.message : '未知错误'}`);
+      console.error(t('infrastructureView.deleteFailedLog'), error);
+      alert(t('infrastructureView.deleteFailed', { 
+        title: item.title, 
+        error: error instanceof Error ? error.message : t('common.unknownError') 
+      }));
       // 失败时不需要调用 refreshData，因为我们从未修改本地状态
     } finally {
       setDeletingItemId(null);
@@ -195,14 +203,14 @@ export default function InfrastructureView() {
             </div>
             <div>
               <h3 className="font-medium">{item.title}</h3>
-              <p className="text-sm text-text2">{serverData?.os || 'Linux'} 服务器</p>
+              <p className="text-sm text-text2">{serverData?.os || 'Linux'} {t('infrastructureView.serverLabel')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setDetailItem(item)}
               className="p-1.5 hover:bg-surface2 rounded"
-              title="查看详情"
+              title={t('common.viewDetails')}
             >
               <Eye className="w-4 h-4" />
             </button>
@@ -212,14 +220,14 @@ export default function InfrastructureView() {
                 setIsModalOpen(true);
               }}
               className="p-1.5 hover:bg-surface2 rounded"
-              title="编辑"
+              title={t('common.edit')}
             >
               <Edit2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleDelete(item)}
               className="p-1.5 hover:bg-surface2 rounded text-error"
-              title="删除"
+              title={t('common.delete')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -230,15 +238,15 @@ export default function InfrastructureView() {
           {/* IP 和端口 */}
           <div className="flex items-center justify-between bg-surface rounded-lg p-2">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-text2">IP:</span>
+              <span className="text-sm text-text2">{t('infrastructureView.ipLabel')}</span>
               <span className="font-mono text-sm">{serverData?.ip || '-'}</span>
               <span className="text-sm text-text2">:</span>
               <span className="font-mono text-sm">{serverData?.port || 22}</span>
             </div>
             <button
-              onClick={() => copyToClipboard(`${serverData?.ip}:${serverData?.port || 22}`, 'IP:端口')}
+              onClick={() => copyToClipboard(`${serverData?.ip}:${serverData?.port || 22}`, t('infrastructureView.ipPort'))}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制 IP:端口"
+              title={t('infrastructureView.copyIpPort')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -248,7 +256,7 @@ export default function InfrastructureView() {
           {serverData?.ssh_user && (
             <div className="flex items-center justify-between bg-surface rounded-lg p-2">
               <div className="flex items-center space-x-2 overflow-hidden">
-                <span className="text-sm text-text2">SSH:</span>
+                <span className="text-sm text-text2">{t('infrastructureView.sshLabel')}</span>
                 <span className="font-mono text-sm truncate">
                   ssh {serverData.ssh_user}@{serverData.ip} -p {serverData.port || 22}
                 </span>
@@ -256,10 +264,10 @@ export default function InfrastructureView() {
               <button
                 onClick={() => copyToClipboard(
                   `ssh ${serverData.ssh_user}@${serverData.ip} -p ${serverData.port || 22}`,
-                  'SSH 命令'
+                  t('infrastructureView.sshCommand')
                 )}
                 className="p-1 hover:bg-surface2 rounded flex-shrink-0"
-                title="复制 SSH 命令"
+                title={t('infrastructureView.copySshCommand')}
               >
                 <Copy className="w-3 h-3" />
               </button>
@@ -269,15 +277,15 @@ export default function InfrastructureView() {
           {/* 密码 */}
           <div className="flex items-center justify-between bg-surface rounded-lg p-2">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-text2">密码:</span>
+              <span className="text-sm text-text2">{t('infrastructureView.passwordLabel')}</span>
               <span className="font-mono text-sm">
                 {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••••'}
               </span>
             </div>
             <button
-              onClick={() => copyToClipboard(item.secret_encrypted, '密码')}
+              onClick={() => copyToClipboard(item.secret_encrypted, t('infrastructureView.password'))}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制密码"
+              title={t('infrastructureView.copyPassword')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -328,7 +336,7 @@ export default function InfrastructureView() {
                               status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
                               'bg-green-500/20 text-green-400'
                             }`}
-                            title={`保护域名: ${cert.domains.join(', ')}`}
+                            title={t('infrastructureView.protectsDomains', { domains: cert.domains.join(', ') })}
                           >
                             {status !== 'good' && <AlertTriangle className="w-3 h-3" />}
                             {cert.cert_name}
@@ -340,7 +348,7 @@ export default function InfrastructureView() {
                 )}
                 
                 {relations.domains.length === 0 && relations.certificates.length === 0 && (
-                  <p className="text-xs text-text2">暂无关联域名和证书</p>
+                  <p className="text-xs text-text2">{t('infrastructureView.noRelatedResources')}</p>
                 )}
               </div>
             ) : null}
@@ -363,7 +371,7 @@ export default function InfrastructureView() {
             </div>
             <div>
               <h3 className="font-medium">{item.title}</h3>
-              <p className="text-sm text-text2">{dbData?.db_type || 'MySQL'} 数据库</p>
+              <p className="text-sm text-text2">{dbData?.db_type || 'MySQL'} {t('infrastructureView.databaseLabel')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-1">
@@ -373,21 +381,21 @@ export default function InfrastructureView() {
                 setIsModalOpen(true);
               }}
               className="p-1.5 hover:bg-surface2 rounded"
-              title="编辑"
+              title={t('common.edit')}
             >
               <Edit2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => toggleSecret(item.id!)}
               className="p-1.5 hover:bg-surface2 rounded"
-              title={showSecrets.has(item.id!) ? '隐藏密码' : '显示密码'}
+              title={showSecrets.has(item.id!) ? t('infrastructureView.hidePassword') : t('infrastructureView.showPassword')}
             >
               {showSecrets.has(item.id!) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
             <button
               onClick={() => handleDelete(item)}
               className="p-1.5 hover:bg-surface2 rounded text-error"
-              title="删除"
+              title={t('common.delete')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -398,15 +406,15 @@ export default function InfrastructureView() {
           {/* Host 和端口 */}
           <div className="flex items-center justify-between bg-surface rounded-lg p-2">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-text2">Host:</span>
+              <span className="text-sm text-text2">{t('infrastructureView.hostLabel')}</span>
               <span className="font-mono text-sm">{dbData?.host || '-'}</span>
               <span className="text-sm text-text2">:</span>
               <span className="font-mono text-sm">{dbData?.port || 3306}</span>
             </div>
             <button
-              onClick={() => copyToClipboard(`${dbData?.host}:${dbData?.port || 3306}`, 'Host:端口')}
+              onClick={() => copyToClipboard(`${dbData?.host}:${dbData?.port || 3306}`, t('infrastructureView.hostPort'))}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制 Host:端口"
+              title={t('infrastructureView.copyHostPort')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -415,13 +423,13 @@ export default function InfrastructureView() {
           {/* 数据库名 */}
           <div className="flex items-center justify-between bg-surface rounded-lg p-2">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-text2">库名:</span>
+              <span className="text-sm text-text2">{t('infrastructureView.databaseNameLabel')}</span>
               <span className="font-mono text-sm">{dbData?.database || '-'}</span>
             </div>
             <button
-              onClick={() => copyToClipboard(dbData?.database || '', '库名')}
+              onClick={() => copyToClipboard(dbData?.database || '', t('infrastructureView.databaseName'))}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制库名"
+              title={t('infrastructureView.copyDatabaseName')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -431,7 +439,7 @@ export default function InfrastructureView() {
           {dbData?.username && dbData?.host && (
             <div className="flex items-center justify-between bg-surface rounded-lg p-2">
               <div className="flex items-center space-x-2 overflow-hidden">
-                <span className="text-sm text-text2">连接:</span>
+                <span className="text-sm text-text2">{t('infrastructureView.connectionLabel')}</span>
                 <span className="font-mono text-sm truncate">
                   {generateConnectionString(
                     dbData.db_type || 'MySQL',
@@ -453,10 +461,10 @@ export default function InfrastructureView() {
                     dbData.port || 3306,
                     dbData.database || ''
                   ),
-                  '连接字符串'
+                  t('infrastructureView.connectionString')
                 )}
                 className="p-1 hover:bg-surface2 rounded flex-shrink-0"
-                title="复制连接字符串 (Navicat/DBeaver 可用)"
+                title={t('infrastructureView.copyConnectionString')}
               >
                 <Copy className="w-3 h-3" />
               </button>
@@ -466,15 +474,15 @@ export default function InfrastructureView() {
           {/* 密码 */}
           <div className="flex items-center justify-between bg-surface rounded-lg p-2">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-text2">密码:</span>
+              <span className="text-sm text-text2">{t('infrastructureView.passwordLabel')}</span>
               <span className="font-mono text-sm">
                 {showSecrets.has(item.id!) ? item.secret_encrypted : '••••••••'}
               </span>
             </div>
             <button
-              onClick={() => copyToClipboard(item.secret_encrypted, '密码')}
+              onClick={() => copyToClipboard(item.secret_encrypted, t('infrastructureView.password'))}
               className="p-1 hover:bg-surface2 rounded"
-              title="复制密码"
+              title={t('infrastructureView.copyPassword')}
             >
               <Copy className="w-3 h-3" />
             </button>
@@ -488,7 +496,7 @@ export default function InfrastructureView() {
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-1 text-sm text-accent hover:text-accent2 mt-2"
             >
-              <span>打开管理后台</span>
+              <span>{t('infrastructureView.openAdminPanel')}</span>
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -510,10 +518,10 @@ export default function InfrastructureView() {
         <div>
           <h2 className="text-lg font-bold flex items-center space-x-2">
             <Server className="w-5 h-5" />
-            <span>基础设施资产</span>
+            <span>{t('infrastructureView.title')}</span>
           </h2>
           <p className="text-sm text-text2 mt-1">
-            共 {servers.length} 台服务器, {databases.length} 个数据库
+            {t('infrastructureView.summary', { serverCount: servers.length, dbCount: databases.length })}
           </p>
         </div>
         <button
@@ -524,7 +532,7 @@ export default function InfrastructureView() {
           className="btn btn-sm"
         >
           <Plus className="w-4 h-4 mr-1" />
-          新建资产
+          {t('infrastructureView.newAsset')}
         </button>
       </div>
 
@@ -537,7 +545,7 @@ export default function InfrastructureView() {
               activeTab === 'all' ? 'bg-accent text-white' : 'bg-surface2 hover:bg-surface'
             }`}
           >
-            全部 ({infrastructureItems.length})
+            {t('infrastructureView.tabAll', { count: infrastructureItems.length })}
           </button>
           <button
             onClick={() => setActiveTab('server')}
@@ -546,7 +554,7 @@ export default function InfrastructureView() {
             }`}
           >
             <Server className="w-4 h-4" />
-            <span>服务器 ({servers.length})</span>
+            <span>{t('infrastructureView.tabServers', { count: servers.length })}</span>
           </button>
           <button
             onClick={() => setActiveTab('database')}
@@ -555,7 +563,7 @@ export default function InfrastructureView() {
             }`}
           >
             <Database className="w-4 h-4" />
-            <span>数据库 ({databases.length})</span>
+            <span>{t('infrastructureView.tabDatabases', { count: databases.length })}</span>
           </button>
         </div>
       </div>
@@ -565,8 +573,8 @@ export default function InfrastructureView() {
         {displayedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text2">
             <Server className="w-12 h-12 mb-4 opacity-50" />
-            <p>暂无基础设施资产</p>
-            <p className="text-sm mt-1">点击右上角"新建资产"添加服务器或数据库</p>
+            <p>{t('infrastructureView.emptyTitle')}</p>
+            <p className="text-sm mt-1">{t('infrastructureView.emptyDesc')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -617,6 +625,7 @@ interface ServerDetailModalProps {
 }
 
 function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
+  const { t } = useTranslation();
   const [showSecrets, setShowSecrets] = useState<Set<string>>(new Set());
   const parsed = parseAssetNotes(item.notes);
   const serverData = parsed.data as ServerAsset | null;
@@ -650,14 +659,14 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
           <button
             onClick={() => toggleSecret(key)}
             className="p-1 hover:bg-surface2 rounded"
-            title={showSecrets.has(key) ? '隐藏' : '显示'}
+            title={showSecrets.has(key) ? t('common.close') : t('infrastructureView.view')}
           >
             {showSecrets.has(key) ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
           </button>
           <button
             onClick={() => copyToClipboard(value, label)}
             className="p-1 hover:bg-surface2 rounded"
-            title="复制"
+            title={t('common.copy')}
           >
             <Copy className="w-3 h-3" />
           </button>
@@ -692,14 +701,14 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold">{item.title}</h2>
-              <p className="text-sm text-text2">{serverData?.os || 'Linux'} 服务器</p>
+              <p className="text-sm text-text2">{serverData?.os || 'Linux'} {t('infrastructureView.serverLabel')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={onEdit}
               className="p-2 hover:bg-surface2 rounded-lg"
-              title="编辑"
+              title={t('common.edit')}
             >
               <Edit2 className="w-4 h-4" />
             </button>
@@ -717,11 +726,11 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
           {/* 基本信息 */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="text-sm text-text2 mb-1 block">IP 地址</label>
+              <label className="text-sm text-text2 mb-1 block">{t('infrastructureView.ipAddress')}</label>
               <div className="flex items-center space-x-2">
                 <span className="font-mono">{serverData?.ip || '-'}</span>
                 <button
-                  onClick={() => copyToClipboard(serverData?.ip || '', 'IP')}
+                  onClick={() => copyToClipboard(serverData?.ip || '', t('infrastructureView.ip'))}
                   className="p-1 hover:bg-surface2 rounded"
                 >
                   <Copy className="w-3 h-3" />
@@ -729,35 +738,35 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
               </div>
             </div>
             <div>
-              <label className="text-sm text-text2 mb-1 block">端口</label>
+              <label className="text-sm text-text2 mb-1 block">{t('infrastructureView.port')}</label>
               <span className="font-mono">{serverData?.port || 22}</span>
             </div>
             <div>
-              <label className="text-sm text-text2 mb-1 block">SSH 用户</label>
+              <label className="text-sm text-text2 mb-1 block">{t('infrastructureView.sshUser')}</label>
               <span>{serverData?.ssh_user || '-'}</span>
             </div>
             <div>
-              <label className="text-sm text-text2 mb-1 block">状态</label>
+              <label className="text-sm text-text2 mb-1 block">{t('infrastructureView.status')}</label>
               <span className={`px-2 py-0.5 rounded text-xs ${
                 serverData?.status === 'running' ? 'bg-green-500/20 text-green-400' :
                 serverData?.status === 'stopped' ? 'bg-red-500/20 text-red-400' :
                 serverData?.status === 'maintenance' ? 'bg-yellow-500/20 text-yellow-400' :
                 'bg-surface2'
               }`}>
-                {serverData?.status === 'running' ? '运行中' :
-                 serverData?.status === 'stopped' ? '已停止' :
-                 serverData?.status === 'maintenance' ? '维护中' : '未知'}
+                {serverData?.status === 'running' ? t('infrastructureModal.status.running') :
+                 serverData?.status === 'stopped' ? t('infrastructureModal.status.stopped') :
+                 serverData?.status === 'maintenance' ? t('infrastructureModal.status.maintenance') : t('infrastructureView.unknown')}
               </span>
             </div>
             {serverData?.region && (
               <div>
-                <label className="text-sm text-text2 mb-1 block">区域</label>
+                <label className="text-sm text-text2 mb-1 block">{t('infrastructureModal.form.region')}</label>
                 <span>{serverData.region}</span>
               </div>
             )}
             {serverData?.provider && (
               <div>
-                <label className="text-sm text-text2 mb-1 block">云服务商</label>
+                <label className="text-sm text-text2 mb-1 block">{t('infrastructureModal.form.provider')}</label>
                 <span>{serverData.provider}</span>
               </div>
             )}
@@ -766,7 +775,7 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
           {/* 标签 */}
           {serverData?.tags && serverData.tags.length > 0 && (
             <div className="mb-6">
-              <label className="text-sm text-text2 mb-2 block">标签</label>
+              <label className="text-sm text-text2 mb-2 block">{t('infrastructureModal.form.tags')}</label>
               <div className="flex flex-wrap gap-2">
                 {serverData.tags.map((tag, idx) => (
                   <span key={idx} className="px-2 py-1 bg-surface rounded text-sm">
@@ -779,17 +788,17 @@ function ServerDetailModal({ item, onClose, onEdit }: ServerDetailModalProps) {
 
           {/* 敏感信息区域 */}
           <div className="border-t border-surface2 pt-4">
-            <h3 className="text-sm font-medium mb-4">认证信息</h3>
+            <h3 className="text-sm font-medium mb-4">{t('infrastructureView.authInfo')}</h3>
             
-            {renderSecretField('密码', item.secret_encrypted, 'password')}
+            {renderSecretField(t('infrastructureView.password'), item.secret_encrypted, 'password')}
             
-            {serverData?.ssh_key && renderSecretField('SSH 私钥', serverData.ssh_key, 'ssh_key', 4)}
+            {serverData?.ssh_key && renderSecretField(t('infrastructureModal.form.sshKey'), serverData.ssh_key, 'ssh_key', 4)}
           </div>
 
           {/* 描述 */}
           {serverData?.description && (
             <div className="border-t border-surface2 pt-4 mt-4">
-              <label className="text-sm text-text2 mb-2 block">描述</label>
+              <label className="text-sm text-text2 mb-2 block">{t('infrastructureModal.form.description')}</label>
               <p className="text-sm">{serverData.description}</p>
             </div>
           )}

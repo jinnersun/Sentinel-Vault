@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import api from '../lib/tauri-api';
 import { open, save } from '@tauri-apps/api/dialog';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { 
   Shield, 
   Database, 
@@ -16,12 +18,14 @@ import {
 
 export default function SettingsView() {
   const { dispatch, refreshData } = useApp();
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [masterPassword, setMasterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [autoLockMinutes, setAutoLockMinutes] = useState(30);
   const [clipboardClearSeconds, setClipboardClearSeconds] = useState(30);
+  const [language, setLanguage] = useState(i18n.language || 'zh');
 
   // 加载设置
   useEffect(() => {
@@ -41,32 +45,32 @@ export default function SettingsView() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      alert('请输入当前密码');
+      alert(t('settings.security.errors.currentRequired'));
       return;
     }
     if (masterPassword !== confirmPassword) {
-      alert('两次输入的新密码不一致');
+      alert(t('settings.security.errors.mismatch'));
       return;
     }
     if (masterPassword.length < 6) {
-      alert('新密码长度至少为 6 位');
+      alert(t('settings.security.errors.tooShort'));
       return;
     }
     try {
       // 验证当前密码
       const isValid = await api.verifyMasterPassword(currentPassword);
       if (!isValid) {
-        alert('当前密码错误');
+        alert(t('settings.security.errors.wrong'));
         return;
       }
       await api.setMasterPassword(masterPassword);
-      alert('主密码修改成功');
+      alert(t('settings.security.errors.success'));
       setCurrentPassword('');
       setMasterPassword('');
       setConfirmPassword('');
     } catch (error) {
       console.error('Failed to change password:', error);
-      alert('修改主密码失败');
+      alert(t('settings.security.errors.failed'));
     }
   };
 
@@ -82,11 +86,11 @@ export default function SettingsView() {
       
       if (savePath && typeof savePath === 'string') {
         await api.backupDatabase(savePath);
-        alert('数据库备份成功');
+        alert(t('settings.data.backupSuccess'));
       }
     } catch (error) {
       console.error('Failed to backup database:', error);
-      alert('数据库备份失败');
+      alert(t('settings.data.backupFailed'));
     }
   };
 
@@ -102,11 +106,11 @@ export default function SettingsView() {
       
       if (selected && typeof selected === 'string') {
         // 切换数据库需要重启应用
-        alert('数据库切换成功，请重启应用');
+        alert(t('settings.data.switchSuccess'));
       }
     } catch (error) {
       console.error('Failed to switch database:', error);
-      alert('数据库切换失败');
+      alert(t('settings.data.switchFailed'));
     }
   };
 
@@ -114,7 +118,7 @@ export default function SettingsView() {
     // 使用异步顺序确认，确保对话框按顺序显示
     const confirmed1 = await new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        const result = window.confirm('警告：此操作将删除所有数据，且无法恢复！\n\n确定要继续吗？');
+        const result = window.confirm(t('settings.danger.confirm1'));
         resolve(result);
       }, 0);
     });
@@ -126,7 +130,7 @@ export default function SettingsView() {
     // 等待第一个确认完成后再显示第二个确认
     const confirmed2 = await new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        const result = window.confirm('再次确认：您真的要删除所有凭证、项目和 API Keys 吗？');
+        const result = window.confirm(t('settings.danger.confirm2'));
         resolve(result);
       }, 0);
     });
@@ -143,37 +147,42 @@ export default function SettingsView() {
       dispatch({ type: 'SET_PROJECTS', payload: [] });
       dispatch({ type: 'SET_SELECTED_ITEM', payload: null });
       dispatch({ type: 'SET_SELECTED_PROJECT', payload: null });
-      alert('所有数据已清空');
+      alert(t('settings.danger.clearSuccess'));
       await refreshData();
     } catch (error) {
       console.error('Failed to clear data:', error);
-      alert('清空数据失败: ' + (error instanceof Error ? error.message : String(error)));
+      alert(t('settings.danger.clearFailed', { error: error instanceof Error ? error.message : String(error) }));
     }
+  };
+
+  const handleLanguageChange = async (newLang: string) => {
+    setLanguage(newLang);
+    await i18n.changeLanguage(newLang);
   };
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
       <div className="p-8 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-8">系统设置</h2>
+        <h2 className="text-2xl font-bold mb-8">{t('settings.title')}</h2>
 
       {/* 安全设置 */}
       <section className="mb-8">
         <div className="flex items-center mb-4">
           <Shield className="w-5 h-5 mr-2 text-accent" />
-          <h3 className="text-lg font-medium">安全设置</h3>
+          <h3 className="text-lg font-medium">{t('settings.security.title')}</h3>
         </div>
         
         <div className="bg-surface border border-surface2 rounded-lg p-6 space-y-6">
           {/* 修改主密码 */}
           <div>
-            <h4 className="font-medium mb-3">修改主密码</h4>
+            <h4 className="font-medium mb-3">{t('settings.security.changePassword')}</h4>
             <form onSubmit={handleChangePassword} className="space-y-3">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="input w-full"
-                placeholder="当前密码"
+                placeholder={t('settings.security.currentPassword')}
               />
               <div className="relative">
                 <input
@@ -181,7 +190,7 @@ export default function SettingsView() {
                   value={masterPassword}
                   onChange={(e) => setMasterPassword(e.target.value)}
                   className="input w-full pr-10"
-                  placeholder="新密码"
+                  placeholder={t('settings.security.newPassword')}
                 />
                 <button
                   type="button"
@@ -196,19 +205,19 @@ export default function SettingsView() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input w-full"
-                placeholder="确认新密码"
+                placeholder={t('settings.security.confirmPassword')}
               />
               <button type="submit" className="btn flex items-center space-x-2">
                 <Save className="w-4 h-4" />
-                <span>保存密码</span>
+                <span>{t('settings.security.savePassword', '保存密码')}</span>
               </button>
             </form>
           </div>
 
           <div className="border-t border-surface2 pt-4">
-            <h4 className="font-medium mb-3">自动锁定</h4>
+            <h4 className="font-medium mb-3">{t('settings.security.autoLock')}</h4>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-text2">闲置</span>
+              <span className="text-sm text-text2">{t('settings.security.autoLockDesc')}</span>
               <select
                 value={autoLockMinutes}
                 onChange={async (e) => {
@@ -222,20 +231,20 @@ export default function SettingsView() {
                 }}
                 className="input"
               >
-                <option value={5}>5 分钟</option>
-                <option value={10}>10 分钟</option>
-                <option value={30}>30 分钟</option>
-                <option value={60}>1 小时</option>
-                <option value={0}>从不</option>
+                <option value={5}>{t('settings.security.timeOptions.5minutes')}</option>
+                <option value={10}>{t('settings.security.timeOptions.10minutes')}</option>
+                <option value={30}>{t('settings.security.timeOptions.30minutes')}</option>
+                <option value={60}>{t('settings.security.timeOptions.1hour')}</option>
+                <option value={0}>{t('settings.security.timeOptions.never')}</option>
               </select>
-              <span className="text-sm text-text2">后自动锁定</span>
+              <span className="text-sm text-text2">{t('settings.security.autoLockSuffix')}</span>
             </div>
           </div>
 
           <div className="border-t border-surface2 pt-4">
-            <h4 className="font-medium mb-3">剪贴板安全</h4>
+            <h4 className="font-medium mb-3">{t('settings.security.clipboardClear')}</h4>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-text2">复制密码后</span>
+              <span className="text-sm text-text2">{t('settings.security.clipboardClearDesc')}</span>
               <select
                 value={clipboardClearSeconds}
                 onChange={async (e) => {
@@ -249,12 +258,12 @@ export default function SettingsView() {
                 }}
                 className="input"
               >
-                <option value={10}>10 秒</option>
-                <option value={30}>30 秒</option>
-                <option value={60}>1 分钟</option>
-                <option value={0}>不清除</option>
+                <option value={10}>{t('settings.security.timeOptions.10seconds')}</option>
+                <option value={30}>{t('settings.security.timeOptions.30seconds')}</option>
+                <option value={60}>{t('settings.security.timeOptions.1minute')}</option>
+                <option value={0}>{t('settings.security.timeOptions.neverClear')}</option>
               </select>
-              <span className="text-sm text-text2">自动清除剪贴板</span>
+              <span className="text-sm text-text2">{t('settings.security.clipboardClearSuffix')}</span>
             </div>
           </div>
         </div>
@@ -264,35 +273,35 @@ export default function SettingsView() {
       <section className="mb-8">
         <div className="flex items-center mb-4">
           <Database className="w-5 h-5 mr-2 text-accent" />
-          <h3 className="text-lg font-medium">数据管理</h3>
+          <h3 className="text-lg font-medium">{t('settings.data.title')}</h3>
         </div>
         
         <div className="bg-surface border border-surface2 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium">备份数据库</h4>
-              <p className="text-sm text-text2">将当前数据库备份到指定位置</p>
+              <h4 className="font-medium">{t('settings.data.backup')}</h4>
+              <p className="text-sm text-text2">{t('settings.data.backupDesc')}</p>
             </div>
             <button
               onClick={handleBackupDatabase}
               className="btn btn-secondary flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
-              <span>备份</span>
+              <span>{t('settings.data.backupBtn', '备份')}</span>
             </button>
           </div>
 
           <div className="border-t border-surface2 pt-4 flex items-center justify-between">
             <div>
-              <h4 className="font-medium">切换数据库</h4>
-              <p className="text-sm text-text2">选择其他数据库文件（需重启）</p>
+              <h4 className="font-medium">{t('settings.data.switch')}</h4>
+              <p className="text-sm text-text2">{t('settings.data.switchDesc')}</p>
             </div>
             <button
               onClick={handleSwitchDatabase}
               className="btn btn-secondary flex items-center space-x-2"
             >
               <Upload className="w-4 h-4" />
-              <span>切换</span>
+              <span>{t('settings.data.switchBtn', '切换')}</span>
             </button>
           </div>
         </div>
@@ -302,30 +311,59 @@ export default function SettingsView() {
       <section>
         <div className="flex items-center mb-4">
           <AlertTriangle className="w-5 h-5 mr-2 text-error" />
-          <h3 className="text-lg font-medium text-error">危险操作</h3>
+          <h3 className="text-lg font-medium text-error">{t('settings.danger.title')}</h3>
         </div>
         
         <div className="bg-error bg-opacity-10 border border-error rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-error">清空所有数据</h4>
-              <p className="text-sm text-text2">删除所有凭证、项目和 API Keys，此操作不可恢复</p>
+              <h4 className="font-medium text-error">{t('settings.danger.clearData')}</h4>
+              <p className="text-sm text-text2">{t('settings.danger.clearDataDesc')}</p>
             </div>
             <button
               onClick={handleClearAllData}
               className="bg-error hover:bg-error/80 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              <span>清空数据</span>
+              <span>{t('settings.danger.clearDataBtn', '清空数据')}</span>
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 语言设置 */}
+      <section className="mb-8">
+        <div className="flex items-center mb-4">
+          <svg className="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+          <h3 className="text-lg font-medium">{t('settings.language.title')}</h3>
+        </div>
+        
+        <div className="bg-surface border border-surface2 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">{t('settings.language.select')}</h4>
+              <p className="text-sm text-text2 mt-1">
+                {language === 'zh' ? '当前语言：中文' : 'Current Language: English'}
+              </p>
+            </div>
+            <select
+              value={language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="input"
+            >
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </select>
           </div>
         </div>
       </section>
 
       {/* 版本信息 */}
       <div className="mt-12 pt-6 border-t border-surface2 text-center text-sm text-text2">
-        <p>DevVault v0.1.0</p>
-        <p className="mt-1">安全存储您的开发凭证</p>
+        <p>DevVault v0.2.0</p>
+        <p className="mt-1">{t('settings.version.subtitle')}</p>
       </div>
       </div>
     </div>

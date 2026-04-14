@@ -30,10 +30,15 @@
     "back": "Back",
     "close": "Close",
     "copy": "Copy",
+    "copied": "Copied",
     "new": "New",
     "add": "Add",
     "remove": "Remove",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "done": "Done",
+    "ok": "OK",
+    "unknownError": "Unknown error",
+    "viewDetails": "View Details"
   },
   "toolbar": {
     "newItem": "New Item (Ctrl+N)",
@@ -68,7 +73,14 @@
     "selectItem": "Select an item to view details",
     "deleteConfirm": "Are you sure you want to delete \"{{title}}\"?",
     "deleteSuccess": "Successfully deleted credential \"{{title}}\"",
-    "deleteFailed": "Failed to delete \"{{title}}\", please try again\n{{error}}"
+    "deleteFailed": "Failed to delete \"{{title}}\", please try again\n{{error}}",
+    "allItems": "All Items",
+    "noMatch": "No matching items found",
+    "noItems": "No items yet",
+    "createFirst": "Create first item",
+    "copyAsEnv": "Copy as Environment Variable",
+    "copyAsJson": "Copy as JSON",
+    "defaultProject": "Project"
   },
   "search": {
     "placeholder": "Search title, notes or URL... (Ctrl+K focus, Enter search)",
@@ -76,15 +88,31 @@
   },
   "sidebar": {
     "newProject": "New Project",
+    "editProject": "Edit Project",
     "enterProjectName": "Please enter project name",
     "createFailed": "Failed to create project: {{error}}",
     "updateFailed": "Failed to update project",
     "unsavedChanges": "You have unsaved changes",
     "saveFailed": "Save failed, cannot navigate",
-    "deleteConfirm": "Are you sure you want to delete this project?"
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteProjectConfirm": "Are you sure you want to delete project \"{{name}}\"?\nNote: All associations under this project will be removed, but credentials will not be deleted.",
+    "deleteFailed": "Failed to delete \"{{name}}\", please try again\n{{error}}",
+    "myProjects": "My Projects",
+    "editProjectTitle": "Edit Project",
+    "chromeCredentials": "Chrome Credentials",
+    "importFromCsv": "Import from CSV",
+    "infrastructure": "Infrastructure",
+    "apiKeysRepo": "API Keys Repository",
+    "domainManagement": "Domain Management",
+    "sslCertificates": "SSL Certificates",
+    "securityCenter": "Security Center",
+    "projectNamePlaceholder": "Project name"
   },
   "settings": {
     "title": "System Settings",
+    "version": {
+      "subtitle": "Securely store your development credentials"
+    },
     "security": {
       "title": "Security Settings",
       "changePassword": "Change Master Password",
@@ -97,6 +125,18 @@
       "clipboardClear": "Clipboard Security",
       "clipboardClearDesc": "After copying password",
       "clipboardClearSuffix": "auto clear clipboard",
+      "savePassword": "Save Password",
+      "timeOptions": {
+        "5minutes": "5 minutes",
+        "10minutes": "10 minutes",
+        "30minutes": "30 minutes",
+        "1hour": "1 hour",
+        "never": "Never",
+        "10seconds": "10 seconds",
+        "30seconds": "30 seconds",
+        "1minute": "1 minute",
+        "neverClear": "Never clear"
+      },
       "errors": {
         "currentRequired": "Please enter current password",
         "mismatch": "New passwords do not match",
@@ -112,10 +152,12 @@
       "backupDesc": "Backup current database to specified location",
       "backupSuccess": "Database backup successful",
       "backupFailed": "Database backup failed",
+      "backupBtn": "Backup",
       "switch": "Switch Database",
       "switchDesc": "Select another database file (requires restart)",
       "switchSuccess": "Database switched successfully, please restart the app",
-      "switchFailed": "Failed to switch database"
+      "switchFailed": "Failed to switch database",
+      "switchBtn": "Switch"
     },
     "danger": {
       "title": "Danger Zone",
@@ -124,7 +166,8 @@
       "confirm1": "Warning: This will delete all data and cannot be recovered!\n\nAre you sure you want to continue?",
       "confirm2": "Confirm again: Do you really want to delete all credentials, projects and API Keys?",
       "clearSuccess": "All data has been cleared",
-      "clearFailed": "Failed to clear data: {{error}}"
+      "clearFailed": "Failed to clear data: {{error}}",
+      "clearDataBtn": "Clear Data"
     },
     "language": {
       "title": "Language Settings",
@@ -133,6 +176,26 @@
   },
   "project": {
     "dashboard": {
+      "editProject": "Edit Project",
+      "unsavedChanges": "You have unsaved project changes",
+      "unsavedIndicator": "* Unsaved changes",
+      "projectName": "Project Name",
+      "projectStatus": "Project Status",
+      "projectDescription": "Project Description",
+      "projectDescriptionPlaceholder": "Describe the project's business logic and goals...",
+      "projectDescriptionLabel": "Project Description",
+      "noDescription": "No project description yet",
+      "architectureDescription": "Architecture Description",
+      "architectureDescriptionPlaceholder": "Describe tech stack, logic flow, or deployment topology...",
+      "architectureDescriptionLabel": "Architecture Description",
+      "noArchitecture": "No architecture description yet",
+      "readmePath": "README File Path",
+      "readmePathPlaceholder": "e.g.: /path/to/README.md",
+      "readmeLoadFailed": "Unable to load README file",
+      "relatedLinks": "Related Links",
+      "linkName": "Name",
+      "addLink": "Add Link",
+      "saveFailed": "Save failed",
       "status": {
         "active": "Active",
         "maintenance": "Maintenance",
@@ -150,14 +213,32 @@
       "user": "User",
       "password": "Password",
       "database": "Database",
-      "openAdmin": "Open Admin Panel"
+      "openAdmin": "Open Admin Panel",
+      "tabAll": "All ({{count}})",
+      "tabServers": "Servers ({{count}})",
+      "tabDatabases": "Databases ({{count}})",
+      "tabApiKeys": "API ({{count}})",
+      "tabChrome": "Chrome ({{count}})",
+      "addResource": "Add resource to this project",
+      "servers": "Servers",
+      "databases": "Databases",
+      "apiKeys": "API Keys",
+      "chromeCredentials": "Chrome Credentials",
+      "noResources": "No resources are linked to this project yet."
     }
+  },
+  "projectRelations": {
+    "apiTab": "API",
+    "apiKeysGroup": "API Keys",
+    "apiKeysTitle": "API Keys",
+    "chromeTab": "Chrome"
   },
   "securityCenter": {
     "title": "Security Center",
     "subtitle": "Anomaly Aggregator - Monitor certificate, domain, server expiration alerts",
     "back": "Back",
     "alertSummary": "Found {{count}} security issues requiring attention",
+    "clickToExpand": "Click to expand and view full impact scope",
     "tabs": {
       "topology": "Topology Alerts",
       "overview": "Overview"
@@ -166,63 +247,378 @@
       "title": "No abnormal impact chains",
       "subtitle": "All certificates, domains, and servers are normal"
     },
-    "impactChains": "Abnormal Impact Chains ({{count}})"
-  },
-  "domain": {
+    "impactChains": "Abnormal Impact Chains ({{count}})",
+    "impactScope": "Impact Scope:",
+    "dueDate": "Due Date",
+    "rotationStatus": "Password Rotation Status",
+    "apiExpiryStatus": "API Expiry Status",
     "status": {
       "expired": "Expired",
-      "warning": "Expiring Soon",
+      "expiringSoon": "Expiring Soon",
       "normal": "Normal",
-      "good": "Good"
+      "alert": "Alert",
+      "warning": "Warning",
+      "expiresIn7Days": "Expires in 7 days",
+      "expiresIn30Days": "Expires in 30 days"
     },
+    "stats": {
+      "apiKeys": "API Keys",
+      "servers": "Servers",
+      "databases": "Databases",
+      "chromeCredentials": "Chrome Credentials"
+    }
+  },
+  "domain": {
+    "title": "Domain Management",
+    "subtitle": "Manage your domains and associated resources",
+    "add": "Add Domain",
+    "edit": "Edit Domain",
+    "searchPlaceholder": "Search domains or registrars...",
+    "empty": "No domains yet",
+    "addFirst": "Add first domain",
+    "registrar": "Registrar",
+    "registrarPlaceholder": "Aliyun / GoDaddy / Namecheap",
+    "registrationDate": "Registration Date",
+    "expiryDate": "Expiry Date",
+    "enableExpiryAlert": "Enable expiry alert",
+    "advance": "Advance",
+    "daysReminder": "days reminder",
+    "days": "days",
+    "notes": "Notes",
+    "notesPlaceholder": "Domain usage description...",
+    "domain": "Domain",
+    "servers": "servers",
+    "certificates": "certificates",
+    "expired": "Expired",
+    "loadFailed": "Failed to load domain list",
+    "syncFailed": "Failed to sync domain info: {{error}}",
+    "linkServerFailed": "Failed to link server",
+    "unlinkServerFailed": "Failed to unlink server",
+    "saveFailed": "Failed to save domain",
     "delete": {
       "confirm": "Are you sure you want to delete this domain?",
       "withRelations": "Domain \"{{domain}}\" is associated with {{relations}}.\n\nDeleting the domain will also remove these associations. Continue?",
       "failed": "Failed to delete domain"
     },
-    "loadFailed": "Failed to load domain list"
-  },
-  "certificate": {
-    "title": "SSL Certificate Management",
-    "subtitle": "Manage SSL certificates and associated domains",
+    "linkServer": "Link Server",
+    "linkServerTitle": "Link Server",
+    "sync": "Sync Info",
+    "link": "Link",
+    "unlink": "Unlink",
+    "noServers": "No servers yet. Please create server assets first",
+    "syncResult": "Sync Result",
+    "dataSource": "Data Source",
+    "fallback": "Fallback",
+    "retrievedInfo": "Retrieved Information:",
+    "notRetrieved": "Not retrieved",
+    "dnsServers": "DNS Servers",
+    "syncWarning": "Unable to retrieve valid domain information. Possible reasons:",
+    "reasons": {
+      "noRdap": "Domain suffix does not support RDAP query",
+      "serverUnavailable": "RDAP server temporarily unavailable",
+      "privacyProtection": "Domain information is privacy protected"
+    },
     "status": {
       "expired": "Expired",
       "warning": "Expiring Soon",
       "normal": "Normal",
       "good": "Good"
-    },
+    }
+  },
+  "certificate": {
+    "title": "SSL Certificate Management",
+    "subtitle": "Manage SSL certificates and associated domains",
+    "uploadBtn": "Upload Certificate",
+    "uploadFirst": "Upload first certificate",
+    "searchPlaceholder": "Search certificate name, domain or issuer...",
+    "empty": "No certificates yet",
+    "issuer": "Issuer",
+    "expiryDate": "Expiry Date",
+    "domains": "Domains",
+    "notes": "Notes",
+    "copyCert": "Copy Certificate",
+    "copyKey": "Copy Private Key",
+    "copyChain": "Copy Certificate Chain",
+    "viewDetails": "View Details",
+    "deployedServers": "Deployed Servers",
+    "noServers": "No deployed servers",
+    "operations": "Operations",
     "copyFailed": "Copy failed",
-    "deleteConfirm": "Are you sure you want to delete this certificate?",
-    "deleteFailed": "Failed to delete certificate",
-    "loadFailed": "Failed to load certificate list"
+    "loadFailed": "Failed to load certificate list",
+    "delete": {
+      "confirm": "Are you sure you want to delete this certificate?",
+      "failed": "Failed to delete certificate"
+    },
+    "upload": {
+      "title": "Upload SSL Certificate",
+      "certName": "Certificate Name",
+      "certNamePlaceholder": "e.g.: example.com-2024",
+      "certContent": "Certificate Content (PEM Format)",
+      "keyContent": "Private Key Content (Optional)",
+      "chainContent": "Certificate Chain (Optional)",
+      "notes": "Notes",
+      "notesPlaceholder": "Certificate usage description...",
+      "uploading": "Uploading...",
+      "submit": "Upload",
+      "errors": {
+        "required": "Please enter certificate name and content"
+      },
+      "failed": "Failed to upload certificate: {{error}}"
+    },
+    "status": {
+      "expired": "Expired",
+      "warning": "Expiring Soon",
+      "normal": "Normal",
+      "good": "Good"
+    }
   },
   "apikeys": {
     "title": "API Keys",
     "empty": "No API Keys yet",
     "addNew": "Click the button above to add a new API Key",
     "new": "New API Key",
+    "editApiKey": "Edit API Key",
     "scope": "Scope",
     "deleteConfirm": "Are you sure you want to delete this API Key?",
     "deleteSuccess": "Successfully deleted API Key",
-    "deleteFailed": "Delete failed, please try again\n{{error}}"
+    "deleteFailed": "Delete failed, please try again\n{{error}}",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g. Aliyun Access Key",
+      "keyValue": "Key Value",
+      "keyValuePlaceholder": "Enter API Key",
+      "scope": "Scope (Optional)",
+      "scopePlaceholder": "e.g. production, readonly"
+    }
   },
   "imports": {
+    "title": "Chrome Import Decision Center",
+    "importFromChrome": "Import Passwords from Chrome",
+    "importDesc": "Select a CSV file exported from Chrome, the system will automatically compare and show differences",
+    "existingChromeCredentials": "Existing Chrome Credentials",
+    "selectCsv": "Select CSV File",
+    "parsing": "Parsing...",
+    "processing": "Processing...",
+    "confirmImport": "Confirm Import",
+    "continueImport": "Continue Import",
+    "unknownWebsite": "Unknown Website",
+    "noUsername": "No Username",
+    "conflictItems": "Conflicts ({{count}})",
+    "conflictDesc": "Password differs from existing record",
+    "newItems": "New Items ({{count}})",
+    "newItemsDesc": "Records not in the vault",
+    "updateAll": "Update All",
+    "skipAll": "Skip All",
+    "importAll": "Import All",
+    "update": "Update",
+    "updateAndArchive": "Update & Archive",
+    "import": "Import",
+    "imported": "Imported",
+    "skip": "Skip",
+    "existingPassword": "Existing Password",
+    "importPassword": "Import Password",
     "parseFailed": "Parse failed: {{error}}",
     "conflictsPending": "There are still {{count}} conflict records pending. Please select \"Update\" or \"Skip\"",
     "noSelection": "No records selected for import",
     "success": "Import completed! Added: {{imported}}, Updated: {{updated}}, Skipped: {{skipped}}",
     "failed": "Import failed: {{error}}",
-    "completed": "Import Completed"
+    "completed": "Import Completed",
+    "steps": {
+      "title": "Steps",
+      "step1": "Open Chrome Settings → Autofill → Password Manager",
+      "step2": "Click settings icon → Export passwords",
+      "step3": "Save the CSV file",
+      "step4": "Click the \"Select CSV File\" button above"
+    },
+    "stats": {
+      "existing": "Existing",
+      "thisImport": "This Import",
+      "new": "Added",
+      "updated": "Updated",
+      "skipped": "Skipped",
+      "conflicts": "Conflicts",
+      "identical": "Identical (Skipped)"
+    }
   },
   "itemModal": {
+    "title": {
+      "edit": "Edit Item",
+      "new": "New Item"
+    },
+    "unsavedIndicator": "* Unsaved changes",
+    "unsavedChanges": "You have unsaved item changes",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "e.g. OpenAI API Key",
+      "websiteUrl": "Website URL",
+      "username": "Username",
+      "usernamePlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password...",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your API Key...",
+      "url": "URL",
+      "urlPlaceholder": "https://api.openai.com",
+      "category": "Category",
+      "project": "Project",
+      "noProject": "No Project",
+      "colorIndicator": "Color Indicator",
+      "notes": "Notes",
+      "notesPlaceholder": "Add notes...",
+      "saving": "Saving...",
+      "update": "Update",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+    "categories": {
+      "database": "Database",
+      "service": "Service",
+      "other": "Other"
+    },
     "errors": {
       "titleRequired": "Please enter title",
       "secretRequired": "Please enter {{type}}",
       "urlRequired": "Please enter website URL",
       "updateFailed": "Update failed: {{error}}",
-      "createFailed": "Create failed: {{error}}"
+      "createFailed": "Create failed: {{error}}",
+      "operationFailed": "Operation failed: {{error}}"
     },
     "pasteConfirm": "Detected possible API Key in clipboard. Auto-fill?",
-    "chromeUsername": "Username"
+    "chromeUsername": "Username",
+    "passwordHistory": "Password History",
+    "noHistory": "No history records",
+    "metadata": "Metadata"
+  },
+  "itemDetail": {
+    "apiKey": "API Key",
+    "url": "URL",
+    "notes": "Notes",
+    "passwordChange": "Password Change",
+    "createdAt": "Created:",
+    "lastModified": "Last Modified:",
+    "colorLabel": "Color Label:"
+  },
+  "infrastructureModal": {
+    "title": {
+      "edit": "Edit Asset",
+      "new": "New Infrastructure Asset"
+    },
+    "form": {
+      "assetType": "Asset Type",
+      "name": "Name",
+      "namePlaceholderServer": "e.g. Production Server-01",
+      "namePlaceholderDatabase": "e.g. Primary Database",
+      "ipAddress": "IP Address",
+      "port": "Port",
+      "os": "Operating System",
+      "sshUser": "SSH User",
+      "password": "Password",
+      "sshPassword": "SSH Password",
+      "description": "Description",
+      "serverDescription": "Server purpose description...",
+      "advancedConfig": "Advanced Configuration",
+      "region": "Region/Data Center",
+      "regionPlaceholder": "e.g. East China-Shanghai",
+      "provider": "Cloud Provider",
+      "providerSelect": "Please Select",
+      "status": "Status",
+      "tags": "Tags",
+      "tagsPlaceholder": "Comma separated, e.g. Production,Web",
+      "sshKey": "SSH Private Key",
+      "leaseSettings": "Lease Settings",
+      "permanentUse": "Permanent Use",
+      "enableExpiryAlert": "Enable Expiry Alert",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "alertDays": "Alert Days Before",
+      "dbType": "Database Type",
+      "host": "Host",
+      "databaseName": "Database Name",
+      "username": "Username",
+      "dbPassword": "Password",
+      "dbPasswordPlaceholder": "Database password",
+      "adminUrl": "Admin Panel URL",
+      "manualInput": "(Manual Input)",
+      "autoGenerate": "(Auto Generate)",
+      "autoGenerateHint": "Auto-generated based on database type and host, can be modified manually",
+      "dbDescription": "Database purpose description...",
+      "serviceLease": "Service Lease Settings",
+      "relatedProject": "Related Project (Optional)",
+      "selectProject": "-- Select Project --",
+      "saving": "Saving...",
+      "save": "Save",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+    "types": {
+      "server": "Server",
+      "database": "Database"
+    },
+    "providers": {
+      "aliyun": "Alibaba Cloud",
+      "tencent": "Tencent Cloud",
+      "huawei": "Huawei Cloud",
+      "selfhosted": "Self-Hosted",
+      "other": "Other"
+    },
+    "status": {
+      "running": "Running",
+      "stopped": "Stopped",
+      "maintenance": "Maintenance"
+    },
+    "errors": {
+      "serverRequired": "Name and IP address cannot be empty",
+      "databaseRequired": "Name, Host and database name cannot be empty",
+      "updateFailed": "Update failed",
+      "createFailed": "Create failed"
+    }
+  },
+  "infrastructureView": {
+    "title": "Infrastructure Assets",
+    "summary": "{{serverCount}} servers, {{dbCount}} databases",
+    "newAsset": "New Asset",
+    "tabAll": "All ({{count}})",
+    "tabServers": "Servers ({{count}})",
+    "tabDatabases": "Databases ({{count}})",
+    "emptyTitle": "No infrastructure assets",
+    "emptyDesc": "Click 'New Asset' in the top right to add servers or databases",
+    "serverLabel": "Server",
+    "databaseLabel": "Database",
+    "ipLabel": "IP:",
+    "sshLabel": "SSH:",
+    "passwordLabel": "Password:",
+    "databaseNameLabel": "Database:",
+    "connectionLabel": "Connection:",
+    "hostLabel": "Host:",
+    "ipPort": "IP:Port",
+    "hostPort": "Host:Port",
+    "sshCommand": "SSH Command",
+    "password": "Password",
+    "databaseName": "Database Name",
+    "connectionString": "Connection String",
+    "copyIpPort": "Copy IP:Port",
+    "copyHostPort": "Copy Host:Port",
+    "copySshCommand": "Copy SSH Command",
+    "copyPassword": "Copy Password",
+    "copyDatabaseName": "Copy Database Name",
+    "copyConnectionString": "Copy Connection String (for Navicat/DBeaver)",
+    "openAdminPanel": "Open Admin Panel",
+    "noRelatedResources": "No related domains or certificates",
+    "view": "View",
+    "hidePassword": "Hide Password",
+    "showPassword": "Show Password",
+    "protectsDomains": "Protects domains: {{domains}}",
+    "ipAddress": "IP Address",
+    "ip": "IP",
+    "port": "Port",
+    "sshUser": "SSH User",
+    "status": "Status",
+    "unknown": "Unknown",
+    "authInfo": "Authentication Info",
+    "deleteServerWithRelations": "Server \"{{title}}\" is associated with the following domains:\n{{domains}}\n\nDeleting the server will also remove these associations. Continue?",
+    "deleteServerConfirm": "Are you sure you want to delete server \"{{title}}\"?",
+    "deleteConfirm": "Are you sure you want to delete \"{{title}}\"?",
+    "deleteFailed": "Failed to delete \"{{title}}\", please try again\n{{error}}",
+    "deleteFailedLog": "Delete failed"
   }
 }

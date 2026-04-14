@@ -3,6 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import { X, Server, Database } from 'lucide-react';
 import api from '../lib/tauri-api';
 import { buildAssetNotes } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface InfrastructureModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ function generateAdminUrl(template: string, params: { host: string; port: number
 }
 
 export default function InfrastructureModal({ isOpen, onClose, item }: InfrastructureModalProps) {
+  const { t } = useTranslation();
   const { state, refreshData } = useApp();
   const [assetType, setAssetType] = useState<'server' | 'database'>('server');
   const [isLoading, setIsLoading] = useState(false);
@@ -248,7 +250,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
     try {
       if (assetType === 'server') {
         if (!serverForm.title.trim() || !serverForm.ip.trim()) {
-          setError('名称和 IP 地址不能为空');
+          setError(t('infrastructureModal.errors.serverRequired'));
           setIsLoading(false);
           return;
         }
@@ -290,7 +292,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
         }
       } else {
         if (!dbForm.title.trim() || !dbForm.host.trim() || !dbForm.database.trim()) {
-          setError('名称、Host 和数据库名不能为空');
+          setError(t('infrastructureModal.errors.databaseRequired'));
           setIsLoading(false);
           return;
         }
@@ -331,7 +333,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
       await refreshData();
       onClose();
     } catch (err) {
-      setError(item?.id ? '更新失败' : '创建失败');
+      setError(item?.id ? t('infrastructureModal.errors.updateFailed') : t('infrastructureModal.errors.createFailed'));
       console.error('Failed to save infrastructure:', err);
     } finally {
       setIsLoading(false);
@@ -346,7 +348,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-surface2">
           <h2 className="text-xl font-bold text-text">
-            {item ? '编辑资产' : '新建基础设施资产'}
+            {item ? t('infrastructureModal.title.edit') : t('infrastructureModal.title.new')}
           </h2>
           <button
             onClick={onClose}
@@ -367,7 +369,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
           {/* Asset Type Selection (only for new items) */}
           {!item && (
             <div>
-              <label className="block text-sm font-medium text-text mb-2">资产类型</label>
+              <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.assetType')}</label>
               <div className="flex space-x-4">
                 <button
                   type="button"
@@ -379,7 +381,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   }`}
                 >
                   <Server className="w-5 h-5" />
-                  <span>服务器</span>
+                  <span>{t('infrastructureModal.types.server')}</span>
                 </button>
                 <button
                   type="button"
@@ -391,7 +393,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   }`}
                 >
                   <Database className="w-5 h-5" />
-                  <span>数据库</span>
+                  <span>{t('infrastructureModal.types.database')}</span>
                 </button>
               </div>
             </div>
@@ -400,7 +402,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
           {/* Common Fields */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              名称 *
+              {t('infrastructureModal.form.name')} *
             </label>
             <input
               type="text"
@@ -413,7 +415,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                 }
               }}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-              placeholder={assetType === 'server' ? '例如：生产服务器-01' : '例如：主数据库'}
+              placeholder={assetType === 'server' ? t('infrastructureModal.form.namePlaceholderServer') : t('infrastructureModal.form.namePlaceholderDatabase')}
             />
           </div>
 
@@ -422,7 +424,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">IP 地址 *</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.ipAddress')} *</label>
                   <input
                     type="text"
                     value={serverForm.ip}
@@ -432,7 +434,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">端口</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.port')}</label>
                   <input
                     type="number"
                     value={serverForm.port}
@@ -444,7 +446,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">操作系统</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.os')}</label>
                   <select
                     value={serverForm.os}
                     onChange={(e) => setServerForm(prev => ({ ...prev, os: e.target.value }))}
@@ -456,7 +458,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">SSH 用户</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.sshUser')}</label>
                   <input
                     type="text"
                     value={serverForm.ssh_user}
@@ -468,88 +470,88 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">密码</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.password')}</label>
                 <input
                   type="password"
                   value={serverForm.password}
                   onChange={(e) => setServerForm(prev => ({ ...prev, password: e.target.value }))}
                   className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-                  placeholder="SSH 密码"
+                  placeholder={t('infrastructureModal.form.sshPassword')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">描述</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.description')}</label>
                 <textarea
                   value={serverForm.description}
                   onChange={(e) => setServerForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={2}
                   className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none"
-                  placeholder="服务器用途描述..."
+                  placeholder={t('infrastructureModal.form.serverDescription')}
                 />
               </div>
 
               {/* 扩展字段区域 */}
               <div className="border-t border-surface2 pt-4 mt-4">
-                <h4 className="text-sm font-medium text-text mb-3">高级配置</h4>
+                <h4 className="text-sm font-medium text-text mb-3">{t('infrastructureModal.form.advancedConfig')}</h4>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">区域/机房</label>
+                    <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.region')}</label>
                     <input
                       type="text"
                       value={serverForm.region}
                       onChange={(e) => setServerForm(prev => ({ ...prev, region: e.target.value }))}
                       className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-                      placeholder="如: 华东-上海"
+                      placeholder={t('infrastructureModal.form.regionPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">云服务商</label>
+                    <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.provider')}</label>
                     <select
                       value={serverForm.provider}
                       onChange={(e) => setServerForm(prev => ({ ...prev, provider: e.target.value }))}
                       className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
                     >
-                      <option value="">请选择</option>
-                      <option value="阿里云">阿里云</option>
-                      <option value="腾讯云">腾讯云</option>
+                      <option value="">{t('infrastructureModal.form.providerSelect')}</option>
+                      <option value="aliyun">{t('infrastructureModal.providers.aliyun')}</option>
+                      <option value="tencent">{t('infrastructureModal.providers.tencent')}</option>
                       <option value="AWS">AWS</option>
                       <option value="Azure">Azure</option>
-                      <option value="华为云">华为云</option>
-                      <option value="自建">自建</option>
-                      <option value="其他">其他</option>
+                      <option value="huawei">{t('infrastructureModal.providers.huawei')}</option>
+                      <option value="selfhosted">{t('infrastructureModal.providers.selfhosted')}</option>
+                      <option value="other">{t('infrastructureModal.providers.other')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">状态</label>
+                    <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.status')}</label>
                     <select
                       value={serverForm.status}
                       onChange={(e) => setServerForm(prev => ({ ...prev, status: e.target.value }))}
                       className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
                     >
-                      <option value="running">运行中</option>
-                      <option value="stopped">已停止</option>
-                      <option value="maintenance">维护中</option>
+                      <option value="running">{t('infrastructureModal.status.running')}</option>
+                      <option value="stopped">{t('infrastructureModal.status.stopped')}</option>
+                      <option value="maintenance">{t('infrastructureModal.status.maintenance')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">标签</label>
+                    <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.tags')}</label>
                     <input
                       type="text"
                       value={serverForm.tags}
                       onChange={(e) => setServerForm(prev => ({ ...prev, tags: e.target.value }))}
                       className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-                      placeholder="用逗号分隔，如: 生产,Web"
+                      placeholder={t('infrastructureModal.form.tagsPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-text mb-2">SSH 私钥</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.sshKey')}</label>
                   <textarea
                     value={serverForm.ssh_key}
                     onChange={(e) => setServerForm(prev => ({ ...prev, ssh_key: e.target.value }))}
@@ -563,7 +565,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                 <div className="mt-6 pt-6 border-t border-surface2">
                   <h4 className="text-sm font-medium text-text mb-4 flex items-center gap-2">
                     <span className="w-1 h-4 bg-accent rounded"></span>
-                    租期设置
+                    {t('infrastructureModal.form.leaseSettings')}
                   </h4>
                   
                   <div className="flex items-center gap-4 mb-4">
@@ -574,7 +576,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                         onChange={(e) => setServerForm(prev => ({ ...prev, server_is_permanent: e.target.checked }))}
                         className="w-4 h-4 rounded border-surface2 text-accent focus:ring-accent"
                       />
-                      <span className="text-sm text-text">永久使用</span>
+                      <span className="text-sm text-text">{t('infrastructureModal.form.permanentUse')}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -583,14 +585,14 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                         onChange={(e) => setServerForm(prev => ({ ...prev, server_enable_expiry_alert: e.target.checked }))}
                         className="w-4 h-4 rounded border-surface2 text-accent focus:ring-accent"
                       />
-                      <span className="text-sm text-text">启用到期提醒</span>
+                      <span className="text-sm text-text">{t('infrastructureModal.form.enableExpiryAlert')}</span>
                     </label>
                   </div>
 
                   {!serverForm.server_is_permanent && (
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-text mb-2">开始时间</label>
+                        <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.startDate')}</label>
                         <input
                           type="date"
                           value={serverForm.server_start_date}
@@ -599,7 +601,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-text mb-2">结束时间</label>
+                        <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.endDate')}</label>
                         <input
                           type="date"
                           value={serverForm.server_end_date}
@@ -608,7 +610,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-text mb-2">提前提醒（天）</label>
+                        <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.alertDays')}</label>
                         <input
                           type="number"
                           value={serverForm.server_expiry_alert_days}
@@ -630,7 +632,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">数据库类型</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.dbType')}</label>
                   <select
                     value={dbForm.db_type}
                     onChange={(e) => setDbForm(prev => ({ ...prev, db_type: e.target.value }))}
@@ -644,7 +646,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">端口</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.port')}</label>
                   <input
                     type="number"
                     value={dbForm.port}
@@ -656,7 +658,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">Host *</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.host')} *</label>
                   <input
                     type="text"
                     value={dbForm.host}
@@ -666,7 +668,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-2">数据库名 *</label>
+                  <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.databaseName')} *</label>
                   <input
                     type="text"
                     value={dbForm.database}
@@ -678,7 +680,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">用户名</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.username')}</label>
                 <input
                   type="text"
                   value={dbForm.username}
@@ -689,22 +691,22 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">密码</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.dbPassword')}</label>
                 <input
                   type="password"
                   value={dbForm.password}
                   onChange={(e) => setDbForm(prev => ({ ...prev, password: e.target.value }))}
                   className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
-                  placeholder="数据库密码"
+                  placeholder={t('infrastructureModal.form.dbPasswordPlaceholder')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-text mb-2">
-                  管理后台 URL
+                  {t('infrastructureModal.form.adminUrl')}
                   {dbForm.admin_url && (
                     <span className="text-xs text-text2 ml-2 font-normal">
-                      {adminUrlManuallyEdited.current ? '(手动输入)' : '(自动生成)'}
+                      {adminUrlManuallyEdited.current ? t('infrastructureModal.form.manualInput') : t('infrastructureModal.form.autoGenerate')}
                     </span>
                   )}
                 </label>
@@ -716,18 +718,18 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                   placeholder="https://phpmyadmin.example.com"
                 />
                 <p className="text-xs text-text2 mt-1">
-                  根据数据库类型和主机自动生成，可手动修改
+                  {t('infrastructureModal.form.autoGenerateHint')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">描述</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.description')}</label>
                 <textarea
                   value={dbForm.description}
                   onChange={(e) => setDbForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={2}
                   className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent resize-none"
-                  placeholder="数据库用途描述..."
+                  placeholder={t('infrastructureModal.form.dbDescription')}
                 />
               </div>
 
@@ -735,7 +737,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               <div className="mt-6 pt-6 border-t border-surface2">
                 <h4 className="text-sm font-medium text-text mb-4 flex items-center gap-2">
                   <span className="w-1 h-4 bg-accent rounded"></span>
-                  服务租期设置
+                  {t('infrastructureModal.form.serviceLease')}
                 </h4>
                 
                 <div className="flex items-center gap-4 mb-4">
@@ -746,7 +748,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                       onChange={(e) => setDbForm(prev => ({ ...prev, service_is_permanent: e.target.checked }))}
                       className="w-4 h-4 rounded border-surface2 text-accent focus:ring-accent"
                     />
-                    <span className="text-sm text-text">永久使用</span>
+                    <span className="text-sm text-text">{t('infrastructureModal.form.permanentUse')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -755,14 +757,14 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                       onChange={(e) => setDbForm(prev => ({ ...prev, service_enable_expiry_alert: e.target.checked }))}
                       className="w-4 h-4 rounded border-surface2 text-accent focus:ring-accent"
                     />
-                    <span className="text-sm text-text">启用到期提醒</span>
+                    <span className="text-sm text-text">{t('infrastructureModal.form.enableExpiryAlert')}</span>
                   </label>
                 </div>
 
                 {!dbForm.service_is_permanent && (
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">开始时间</label>
+                      <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.startDate')}</label>
                       <input
                         type="date"
                         value={dbForm.service_start_date}
@@ -771,7 +773,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">结束时间</label>
+                      <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.endDate')}</label>
                       <input
                         type="date"
                         value={dbForm.service_end_date}
@@ -780,7 +782,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">提前提醒（天）</label>
+                      <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.alertDays')}</label>
                       <input
                         type="number"
                         value={dbForm.service_expiry_alert_days}
@@ -798,7 +800,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
 
           {/* Project Selection */}
           <div>
-            <label className="block text-sm font-medium text-text mb-2">关联项目（可选）</label>
+            <label className="block text-sm font-medium text-text mb-2">{t('infrastructureModal.form.relatedProject')}</label>
             <select
               value={assetType === 'server' ? serverForm.project_id || '' : dbForm.project_id || ''}
               onChange={(e) => {
@@ -811,7 +813,7 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               }}
               className="w-full px-3 py-2 bg-background border border-surface2 rounded-lg focus:outline-none focus:border-accent"
             >
-              <option value="">-- 选择项目 --</option>
+              <option value="">{t('infrastructureModal.form.selectProject')}</option>
               {state.projects.map(project => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
@@ -826,14 +828,14 @@ export default function InfrastructureModal({ isOpen, onClose, item }: Infrastru
               className="px-4 py-2 bg-surface2 hover:bg-surface rounded-lg transition-colors"
               disabled={isLoading}
             >
-              取消
+              {t('infrastructureModal.form.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-accent hover:bg-accent2 text-white rounded-lg transition-colors"
               disabled={isLoading}
             >
-              {isLoading ? '保存中...' : (item ? '保存' : '创建')}
+              {isLoading ? t('infrastructureModal.form.saving') : (item ? t('infrastructureModal.form.save') : t('infrastructureModal.form.create'))}
             </button>
           </div>
         </form>

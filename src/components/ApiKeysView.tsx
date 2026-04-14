@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import api from '../lib/tauri-api';
 import { Trash2, Edit2, Plus, Copy, Eye, EyeOff } from 'lucide-react';
 import type { ApiKey } from '../types';
+import { useTranslation } from 'react-i18next';
 
 export default function ApiKeysView() {
+  const { t } = useTranslation();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [showNewKey, setShowNewKey] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
@@ -66,7 +68,7 @@ export default function ApiKeysView() {
       return;
     }
 
-    if (!window.confirm('确定要删除这个 API Key 吗？')) {
+    if (!window.confirm(t('apikeys.deleteConfirm'))) {
       return;
     }
 
@@ -79,10 +81,10 @@ export default function ApiKeysView() {
       // 只有后端成功返回，才更新本地状态
       setApiKeys(prev => prev.filter(k => k.id !== id));
       
-      console.log('成功删除 API Key');
+      console.log(t('apikeys.deleteSuccess'));
     } catch (e) {
       console.error('删除失败', e);
-      alert(`删除失败，请重试\n${e instanceof Error ? e.message : '未知错误'}`);
+      alert(t('apikeys.deleteFailed', { error: e instanceof Error ? e.message : t('common.unknownError') }));
       // 失败时刷新，用来恢复数据
       await loadApiKeys();
     } finally {
@@ -114,21 +116,21 @@ export default function ApiKeysView() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">API Keys</h2>
+        <h2 className="text-xl font-semibold">{t('apikeys.title')}</h2>
         <button
           onClick={() => setShowNewKey(true)}
           className="btn"
         >
           <Plus className="w-4 h-4 mr-2" />
-          新建 API Key
+          {t('apikeys.new')}
         </button>
       </div>
 
       {apiKeys.length === 0 ? (
         <div className="text-center py-12 text-text2">
           <div className="text-6xl mb-4">🔑</div>
-          <p>暂无 API Keys</p>
-          <p className="text-sm mt-2">点击上方按钮添加新的 API Key</p>
+          <p>{t('apikeys.empty')}</p>
+          <p className="text-sm mt-2">{t('apikeys.addNew')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -156,14 +158,14 @@ export default function ApiKeysView() {
                   <button
                     onClick={() => copyToClipboard(key.key_value)}
                     className="p-1 hover:bg-surface2 rounded"
-                    title="复制"
+                    title={t('common.copy')}
                   >
                     <Copy className="w-4 h-4 text-text2" />
                   </button>
                 </div>
                 {key.scope && (
                   <div className="text-xs text-text2 mt-1">
-                    作用域: {key.scope}
+                    {t('apikeys.scope')}: {key.scope}
                   </div>
                 )}
               </div>
@@ -172,14 +174,14 @@ export default function ApiKeysView() {
                 <button
                   onClick={() => setEditingKey(key)}
                   className="p-2 hover:bg-surface2 rounded text-text2"
-                  title="编辑"
+                  title={t('common.edit')}
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => key.id && handleDelete(key.id)}
                   className="p-2 hover:bg-surface2 rounded text-text2 hover:text-error"
-                  title="删除"
+                  title={t('common.delete')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -193,44 +195,44 @@ export default function ApiKeysView() {
       {showNewKey && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">新建 API Key</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('apikeys.new')}</h3>
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-text2 mb-1">名称</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.name')}</label>
                   <input
                     type="text"
                     value={newKey.name}
                     onChange={(e) => setNewKey({ ...newKey, name: e.target.value })}
                     className="input w-full"
-                    placeholder="例如: Aliyun Access Key"
+                    placeholder={t('apikeys.form.namePlaceholder')}
                     autoFocus
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-text2 mb-1">Key Value</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.keyValue')}</label>
                   <input
                     type="text"
                     value={newKey.key_value}
                     onChange={(e) => setNewKey({ ...newKey, key_value: e.target.value })}
                     className="input w-full"
-                    placeholder="输入 API Key"
+                    placeholder={t('apikeys.form.keyValuePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-text2 mb-1">作用域 (可选)</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.scope')}</label>
                   <input
                     type="text"
                     value={newKey.scope}
                     onChange={(e) => setNewKey({ ...newKey, scope: e.target.value })}
                     className="input w-full"
-                    placeholder="例如: production, readonly"
+                    placeholder={t('apikeys.form.scopePlaceholder')}
                   />
                 </div>
               </div>
               <div className="flex space-x-2 mt-6">
                 <button type="submit" className="btn flex-1">
-                  创建
+                  {t('common.create')}
                 </button>
                 <button
                   type="button"
@@ -240,7 +242,7 @@ export default function ApiKeysView() {
                   }}
                   className="btn-secondary flex-1"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -252,50 +254,50 @@ export default function ApiKeysView() {
       {editingKey && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">编辑 API Key</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('apikeys.editApiKey', '编辑 API Key')}</h3>
             <form onSubmit={handleUpdate}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-text2 mb-1">名称</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.name')}</label>
                   <input
                     type="text"
                     value={editingKey.name}
                     onChange={(e) => setEditingKey({ ...editingKey, name: e.target.value })}
                     className="input w-full"
-                    placeholder="例如: Aliyun Access Key"
+                    placeholder={t('apikeys.form.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-text2 mb-1">Key Value</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.keyValue')}</label>
                   <input
                     type="text"
                     value={editingKey.key_value}
                     onChange={(e) => setEditingKey({ ...editingKey, key_value: e.target.value })}
                     className="input w-full"
-                    placeholder="输入 API Key"
+                    placeholder={t('apikeys.form.keyValuePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-text2 mb-1">作用域 (可选)</label>
+                  <label className="block text-sm text-text2 mb-1">{t('apikeys.form.scope')}</label>
                   <input
                     type="text"
                     value={editingKey.scope || ''}
                     onChange={(e) => setEditingKey({ ...editingKey, scope: e.target.value })}
                     className="input w-full"
-                    placeholder="例如: production, readonly"
+                    placeholder={t('apikeys.form.scopePlaceholder')}
                   />
                 </div>
               </div>
               <div className="flex space-x-2 mt-6">
                 <button type="submit" className="btn flex-1">
-                  保存
+                  {t('common.save')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingKey(null)}
                   className="btn-secondary flex-1"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

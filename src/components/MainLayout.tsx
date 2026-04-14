@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useTranslation } from 'react-i18next';
 import Sidebar from './Sidebar';
 import VaultList from './VaultList';
 import ItemDetail from './ItemDetail';
@@ -18,6 +19,7 @@ import ItemModal from './ItemModal';
 
 export default function MainLayout() {
   const { state } = useApp();
+  const { t } = useTranslation();
   const [windowSize, setWindowSize] = useState({ width: 1200, height: 800 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -100,7 +102,7 @@ export default function MainLayout() {
                         <div className="flex-1 flex items-center justify-center text-text2 h-full">
                           <div className="text-center">
                             <div className="text-6xl mb-4">🔐</div>
-                            <p className="text-lg">选择一个条目查看详情</p>
+                            <p className="text-lg">{t('vault.selectItem')}</p>
                           </div>
                         </div>
                       )}
